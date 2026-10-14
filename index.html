@@ -1,0 +1,2242 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Werwolf – Düsterwald</title>
+<meta name="description" content="Digitaler Spielleiter für Werwolf: Rollen verteilen, mystischer Erzähler, geheime Abstimmungen.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Werwolf">
+<meta name="theme-color" content="#07060d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@500;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07060d; --bg2:#140f22; --ink:#efe6d2; --mute:#a59cb4; --gold:#f1d68a; --gold2:#c99a45;
+  --blood:#c0283f; --blood2:#7a1222; --violet:#7b5bb5; --green:#5fae7b;
+  --card:rgba(22,17,36,.78); --line:rgba(241,214,138,.16); --line2:rgba(241,214,138,.35);
+  --r:18px; --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink)}
+body{font-family:Spectral,Georgia,serif;font-size:17px;line-height:1.45;overflow-x:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:background 2.5s}
+input,select,textarea{-webkit-user-select:text;user-select:text}
+h1,h2,h3{font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.02em;margin:.2em 0}
+button{font:inherit;color:inherit}
+
+/* ---------- Himmel ---------- */
+#sky{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 0%,#2a1f3d 0%,#120d1f 45%,#07060d 100%);transition:opacity 2.5s}
+#dayg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity 3s;
+  background:radial-gradient(ellipse at 50% 110%,#e08a4a 0%,#7a3d4a 30%,#2c2140 65%,#120d1f 100%)}
+body.day #dayg{opacity:1}
+#stars{position:absolute;inset:0;transition:opacity 3s}
+body.day #stars{opacity:.15}
+.star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:tw 4s infinite ease-in-out}
+@keyframes tw{0%,100%{opacity:.25}50%{opacity:1}}
+#moon{position:absolute;right:-60px;top:calc(40px + var(--sat));width:210px;height:210px;border-radius:50%;
+  background:radial-gradient(circle at 40% 38%,#fff6d6,#f1d68a 60%,#c99a45);
+  box-shadow:0 0 60px 20px rgba(241,214,138,.22),0 0 160px 60px rgba(241,214,138,.08);opacity:.55;transition:all 3s}
+body.day #moon{top:110%;opacity:0}
+body.ingame #moon{width:150px;height:150px;right:-70px;opacity:.28}
+.fog{position:absolute;left:-50%;width:200%;height:45%;bottom:-8%;opacity:.35;filter:blur(30px);
+  background:radial-gradient(ellipse at 20% 60%,rgba(170,160,200,.35),transparent 55%),radial-gradient(ellipse at 70% 50%,rgba(150,140,190,.3),transparent 50%);
+  animation:drift 38s linear infinite}
+.fog.f2{bottom:-15%;opacity:.25;animation-duration:55s;animation-direction:reverse}
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(25%)}}
+#trees{position:absolute;left:0;right:0;bottom:0;height:120px;opacity:.9}
+body.blood #sky{background:radial-gradient(ellipse at 50% 0%,#4a1020 0%,#1a0810 50%,#07060d 100%)}
+
+/* ---------- Layout ---------- */
+#app{position:relative;z-index:1;min-height:100%;padding:calc(14px + var(--sat)) 16px calc(110px + var(--sab));max-width:640px;margin:0 auto}
+.fade{animation:fin .45s ease}
+@keyframes fin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:14px 0;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.card h3{font-size:1.05rem;color:var(--gold);display:flex;align-items:center;gap:8px}
+.mute{color:var(--mute)}
+.small{font-size:.88rem}
+.center{text-align:center}
+.row{display:flex;gap:10px;align-items:center}
+.grow{flex:1}
+
+.hero{text-align:center;padding:14px 0 4px}
+.hero svg{width:118px;height:118px;border-radius:28px;box-shadow:0 10px 40px rgba(0,0,0,.6),0 0 0 1px var(--line2)}
+.hero h1{font-family:"Cinzel Decorative",Cinzel,serif;font-size:2.4rem;margin:.25em 0 0;color:var(--gold);text-shadow:0 0 24px rgba(241,214,138,.35)}
+.hero p{margin:.1em 0 0;color:var(--mute);font-style:italic}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line2);background:rgba(255,255,255,.04);
+  border-radius:14px;padding:14px 18px;font-family:Cinzel,serif;font-weight:700;font-size:1rem;cursor:pointer;transition:transform .1s,background .2s,opacity .2s;min-height:52px}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(180deg,#f3dc98,#c99a45);color:#1a1206;border-color:transparent;box-shadow:0 6px 24px rgba(201,154,69,.3)}
+.btn.blood{background:linear-gradient(180deg,#d63a52,#8e1528);border-color:transparent;color:#fff;box-shadow:0 6px 24px rgba(192,40,63,.35)}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.35;pointer-events:none}
+.btn.wide{width:100%}
+.btn.sm{min-height:38px;padding:7px 12px;font-size:.85rem;border-radius:10px}
+.acts{display:flex;gap:10px;margin-top:18px}
+.acts .btn{flex:1}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:12px 16px calc(12px + var(--sab));
+  background:linear-gradient(180deg,transparent,rgba(7,6,13,.92) 35%)}
+.sticky .in{max-width:640px;margin:0 auto}
+
+input[type=text]{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font:inherit;font-size:16px;outline:none}
+input[type=text]:focus{border-color:var(--gold2)}
+select{background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:10px;padding:9px;color:var(--ink);font:inherit;font-size:15px;max-width:100%}
+input[type=range]{width:100%;accent-color:var(--gold2)}
+
+.plist{list-style:none;padding:0;margin:10px 0 0;counter-reset:p}
+.plist li{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.05);counter-increment:p}
+.plist li:before{content:counter(p);width:22px;color:var(--mute);font-size:.8rem;text-align:right}
+.plist .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib{border:1px solid var(--line);background:transparent;border-radius:9px;width:34px;height:34px;cursor:pointer;color:var(--mute);font-size:1rem}
+.ib:active{background:rgba(255,255,255,.08)}
+
+.roles{display:grid;gap:8px;margin-top:10px}
+.role{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);cursor:pointer;transition:all .2s}
+.role.on{border-color:var(--gold2);background:rgba(241,214,138,.08)}
+.role .ic{font-size:1.7rem;width:38px;text-align:center}
+.role b{font-family:Cinzel,serif;font-size:.95rem}
+.role .d{font-size:.83rem;color:var(--mute);line-height:1.3}
+.sw{margin-left:auto;flex:none;width:46px;height:28px;border-radius:20px;background:#3a3448;position:relative;transition:.2s}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#cfc6dc;transition:.2s}
+.on>.sw,.sw.on{background:var(--gold2)}
+.on>.sw:after,.sw.on:after{left:21px;background:#fff}
+.tgroup{font-family:Cinzel,serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:14px 2px 2px}
+.counter{display:flex;align-items:center;gap:10px}
+.counter b{min-width:28px;text-align:center;font-size:1.3rem;font-family:Cinzel,serif}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line);border-radius:30px;padding:3px 10px;font-size:.85rem;background:rgba(0,0,0,.25)}
+.warn{color:#ff8a9a;font-size:.9rem;margin-top:8px}
+.set{display:grid;gap:14px}
+.set label{display:block;font-size:.92rem;color:var(--mute);margin-bottom:4px}
+.seg{display:flex;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;background:transparent;border:0;padding:10px 6px;cursor:pointer;font-size:.9rem}
+.seg button.on{background:rgba(241,214,138,.16);color:var(--gold)}
+.tog{display:flex;align-items:center;gap:10px;cursor:pointer}
+details summary{cursor:pointer;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary h3:after{content:"▾";margin-left:auto;color:var(--mute)}
+details[open] summary h3:after{content:"▴"}
+
+/* ---------- Spielszenen ---------- */
+.scr{min-height:calc(100vh - 160px);min-height:calc(100dvh - 160px);display:flex;flex-direction:column;justify-content:center}
+.scene{text-align:center}
+.scene .big{font-size:5rem;line-height:1;filter:drop-shadow(0 0 30px rgba(241,214,138,.35));animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.scene h2{font-size:1.9rem;color:var(--gold);margin-top:14px}
+.scene p{color:var(--mute);font-style:italic}
+.kicker{font-family:Cinzel,serif;font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:var(--mute)}
+.ricon{font-size:3.6rem;text-align:center;filter:drop-shadow(0 0 22px rgba(241,214,138,.3))}
+.pick h2{text-align:center;color:var(--gold);font-size:1.5rem}
+.pick .sub{text-align:center;color:var(--mute);margin:.2em 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{position:relative;border:1px solid var(--line);background:rgba(0,0,0,.3);border-radius:14px;padding:16px 10px;min-height:62px;cursor:pointer;
+  font-family:Cinzel,serif;font-weight:700;font-size:1rem;transition:all .15s;word-break:break-word}
+.opt.sel{border-color:var(--gold);background:rgba(241,214,138,.18);box-shadow:0 0 0 2px rgba(241,214,138,.35),0 0 26px rgba(241,214,138,.2)}
+.pick.wolf .opt.sel{border-color:var(--blood);background:rgba(192,40,63,.25);box-shadow:0 0 0 2px rgba(192,40,63,.5),0 0 26px rgba(192,40,63,.3)}
+.opt .tag{position:absolute;top:4px;right:7px;font-size:.85rem}
+.opt.dis{opacity:.3;pointer-events:none}
+.pass{text-align:center}
+.pass .to{font-size:.95rem;color:var(--mute);font-family:Cinzel,serif;letter-spacing:.15em;text-transform:uppercase}
+.pass .who{font-family:"Cinzel Decorative",Cinzel,serif;font-size:2.6rem;color:var(--gold);margin:10px 0 6px;word-break:break-word}
+.pass .hint{color:var(--mute);font-style:italic;margin-bottom:24px}
+.prog{display:flex;gap:4px;justify-content:center;margin:0 0 22px;flex-wrap:wrap}
+.prog i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15)}
+.prog i.d{background:var(--gold2)}
+
+/* Rollenkarte */
+.flip{perspective:1200px;margin:6px auto 0;width:min(320px,86vw);height:min(440px,62vh);touch-action:none;cursor:pointer}
+.flip .in{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.flip.show .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:22px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center;overflow:hidden}
+.face.back{background:radial-gradient(circle at 50% 35%,#2d2245,#120d1f 70%);border:2px solid var(--line2);box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.face.back svg{width:62%;height:auto;border-radius:24px;opacity:.95}
+.face.back .ht{margin-top:18px;font-family:Cinzel,serif;color:var(--gold);letter-spacing:.06em}
+.face.front{transform:rotateY(180deg);background:linear-gradient(180deg,#1f1830,#0e0a17);border:2px solid var(--gold2);box-shadow:0 0 50px rgba(241,214,138,.25)}
+.face.front.wolf{border-color:var(--blood);box-shadow:0 0 50px rgba(192,40,63,.4);background:linear-gradient(180deg,#2a0f18,#0e0a17)}
+.face.front.solo{border-color:var(--violet);box-shadow:0 0 50px rgba(123,91,181,.4)}
+.face .ri{font-size:5rem;line-height:1.1}
+.face .rn{font-family:"Cinzel Decorative",Cinzel,serif;font-size:1.7rem;color:var(--gold);margin:6px 0 2px}
+.face .tm{font-family:Cinzel,serif;font-size:.75rem;letter-spacing:.18em;text-transform:uppercase;padding:3px 10px;border-radius:20px;border:1px solid currentColor;margin-bottom:12px}
+.tm.dorf{color:var(--green)} .tm.wolf{color:#ff6b80} .tm.solo{color:#b99be8}
+.face .rd{font-size:.98rem;line-height:1.4}
+.face .rx{margin-top:12px;font-size:.9rem;color:var(--gold);font-style:italic}
+
+/* Untertitel */
+#cap{position:fixed;left:50%;bottom:calc(16px + var(--sab));transform:translateX(-50%);z-index:8;width:min(600px,calc(100% - 28px));
+  background:rgba(7,6,13,.82);border:1px solid var(--line);border-radius:16px;padding:12px 16px 12px 44px;font-style:italic;font-size:1.02rem;
+  color:#f4ead2;opacity:0;pointer-events:none;transition:opacity .35s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#cap.on{opacity:1;pointer-events:auto}
+#cap:before{content:"🕯️";position:absolute;left:14px;top:11px;font-style:normal;animation:flick 1.6s infinite}
+#cap small{display:block;font-style:normal;color:var(--mute);font-size:.72rem;margin-top:4px;font-family:Cinzel,serif;letter-spacing:.08em}
+@keyframes flick{0%,100%{opacity:1}45%{opacity:.6}55%{opacity:.9}}
+body.ingame .sticky{bottom:0}
+body.capon .sticky{transform:translateY(-78px);transition:transform .3s}
+
+/* Menü */
+#menuBtn{position:fixed;top:calc(10px + var(--sat));right:12px;z-index:9;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(7,6,13,.6);font-size:1.2rem;cursor:pointer;display:none;backdrop-filter:blur(6px)}
+body.ingame #menuBtn{display:block}
+#ov{position:fixed;inset:0;z-index:20;display:none;background:rgba(4,3,8,.92);overflow:auto;padding:calc(18px + var(--sat)) 16px calc(24px + var(--sab))}
+#ov.on{display:block}
+#ov .wrap{max-width:600px;margin:0 auto}
+
+/* Tod */
+.dead .big{filter:grayscale(.2) drop-shadow(0 0 30px rgba(192,40,63,.5))}
+.tomb{margin:18px auto 0;max-width:340px;border:1px solid var(--line);border-radius:18px;padding:16px;background:rgba(0,0,0,.35)}
+.tomb .rn{font-family:Cinzel,serif;font-size:1.3rem;color:var(--gold)}
+.strike{text-decoration:line-through;opacity:.5}
+
+/* Timer */
+.timer{position:relative;width:min(260px,70vw);aspect-ratio:1;margin:12px auto}
+.timer svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer .t{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:Cinzel,serif;font-size:3.2rem;color:var(--gold)}
+.timer.low .t{color:#ff6b80;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.06)}}
+
+/* Ergebnis */
+.bars{display:grid;gap:8px;margin-top:12px}
+.bar{position:relative;isolation:isolate;border:1px solid var(--line);border-radius:12px;padding:10px 12px;overflow:hidden;display:flex;justify-content:space-between;font-family:Cinzel,serif}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(192,40,63,.55),rgba(192,40,63,.15));transition:width 1.2s ease;z-index:-1}
+.bar.top{border-color:var(--blood)}
+.vrow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.vrow .nm{flex:1;font-family:Cinzel,serif}
+.vrow b{min-width:26px;text-align:center;font-size:1.2rem}
+
+/* Ende */
+.win h1{font-family:"Cinzel Decorative",Cinzel,serif;font-size:2.1rem;color:var(--gold);text-align:center;margin-top:8px}
+.tbl{width:100%;border-collapse:collapse;font-size:.95rem}
+.tbl td{padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+.log{font-size:.9rem;line-height:1.5}
+.log div{padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.06)}
+.log b{color:var(--gold);font-family:Cinzel,serif;font-weight:500}
+.confetti{position:fixed;top:-20px;font-size:1.4rem;z-index:30;animation:fall linear forwards;pointer-events:none}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+.flash{position:fixed;inset:0;z-index:25;pointer-events:none;background:radial-gradient(circle,rgba(192,40,63,.5),transparent 70%);animation:fl 1.4s ease forwards}
+@keyframes fl{0%{opacity:0}15%{opacity:1}100%{opacity:0}}
+.shake{animation:shake .5s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.foot{text-align:center;color:var(--mute);font-size:.8rem;margin-top:22px}
+a{color:var(--gold)}
+@media (min-width:520px){.grid{grid-template-columns:1fr 1fr 1fr}}
+.cdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#6b3340;vertical-align:middle;box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+.cdot.on{background:#5fae7b;box-shadow:0 0 8px rgba(95,174,123,.7)}
+.plist li .cdot{flex:none}
+.roomcode{display:flex;justify-content:center;gap:8px;margin:10px 0 14px}
+.roomcode span{font-family:"Cinzel Decorative",Cinzel,serif;font-size:2.1rem;color:var(--gold);width:48px;height:60px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line2);border-radius:12px;background:rgba(0,0,0,.35)}
+.qr{width:200px;margin:0 auto 10px;border-radius:14px;overflow:hidden;box-shadow:0 0 30px rgba(241,214,138,.2)}
+.qr svg{display:block;width:100%;height:auto}
+.hstat{color:var(--gold);margin:-4px 0 12px;font-size:.95rem}
+.opt .wtag{position:absolute;left:6px;right:6px;bottom:3px;top:auto;font-family:Spectral,serif;font-weight:400;font-size:.72rem;color:#ff8a9a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pick.wolf .opt{padding-bottom:22px}
+.whisper{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;text-align:left}
+.whisper>div{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:rgba(0,0,0,.3)}
+.wrow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.vlist{margin-top:14px;text-align:left;font-size:.9rem;columns:2;column-gap:16px}
+.vlist div{break-inside:avoid;padding:2px 0}
+.waitv .big{animation:float 5s ease-in-out infinite,dim 3s ease-in-out infinite}
+@keyframes dim{50%{opacity:.6}}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:16px}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--gold2);animation:dt 1.4s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes dt{0%,80%,100%{opacity:.2}40%{opacity:1}}
+#lostbar{position:fixed;top:calc(8px + var(--sat));left:12px;right:64px;z-index:15;background:rgba(122,18,34,.92);color:#fff;border-radius:12px;padding:9px 12px;font-size:.85rem;text-align:center}
+.card.ghost{border-color:rgba(185,155,232,.35);background:rgba(40,30,60,.6);margin-top:-10px}
+</style>
+</head>
+<body>
+<div id="sky">
+  <div id="stars"></div>
+  <div id="moon"></div>
+  <div class="fog"></div><div class="fog f2"></div>
+  <svg id="trees" viewBox="0 0 400 120" preserveAspectRatio="none"><path fill="#05040a" d="M0 120V78l10-20 8 18 6-30 9 34 7-22 8 26 10-44 10 40 8-24 9 30 7-18 9 22 12-50 11 46 8-26 10 34 7-20 8 24 11-40 10 38 9-28 8 30 7-16 9 20 12-46 10 42 9-24 8 30 7-18 10 22 11-38 10 36 9-26 8 30 9-20 8 24 10-34 11 32 8-20 9 26V120z"/></svg>
+</div>
+<div id="dayg"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="logo" viewBox="0 0 512 512">
+    <defs>
+      <radialGradient id="lbg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a1f3d"/><stop offset=".55" stop-color="#140f22"/><stop offset="1" stop-color="#07060d"/></radialGradient>
+      <radialGradient id="lmoon" cx="42%" cy="40%" r="60%"><stop offset="0" stop-color="#fff4cf"/><stop offset=".7" stop-color="#f1d68a"/><stop offset="1" stop-color="#c99a45"/></radialGradient>
+      <radialGradient id="lglow" cx="50%" cy="50%" r="50%"><stop offset=".55" stop-color="#f1d68a" stop-opacity=".45"/><stop offset="1" stop-color="#f1d68a" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="512" height="512" fill="url(#lbg)"/>
+    <circle cx="236" cy="200" r="200" fill="url(#lglow)"/>
+    <circle cx="236" cy="200" r="142" fill="url(#lmoon)"/>
+    <g fill="#c99a45" opacity=".35"><circle cx="190" cy="160" r="22"/><circle cx="280" cy="250" r="30"/><circle cx="300" cy="140" r="12"/><circle cx="200" cy="270" r="10"/></g>
+    <path fill="#06050a" d="M176 512 C192 452 204 404 200 346 C196 304 178 266 160 228 L130 156 C150 172 172 186 194 196 L186 178 C168 152 150 124 138 98 C146 86 160 84 172 90 C198 106 224 124 248 140 C258 136 268 128 276 118 L296 50 C306 76 318 98 330 112 L356 72 C362 104 366 130 368 158 C380 186 388 214 394 240 L418 256 L404 268 L438 288 L420 300 L456 330 L432 338 L470 372 L446 380 L484 414 L460 420 L512 462 L512 512 Z"/>
+    <path fill="#e8b84a" d="M266 158 C274 152 284 150 292 152 C286 160 276 164 266 158 Z"/>
+    <path fill="#06050a" d="M0 470 C80 440 140 452 200 470 C260 488 330 478 400 470 C450 466 490 470 512 476 L512 512 L0 512 Z"/>
+  </symbol>
+</svg>
+
+<button id="menuBtn" aria-label="Menü">☰</button>
+<div id="app"></div>
+<div id="cap" title="Tippen zum Überspringen"></div>
+<div id="ov"><div class="wrap" id="ovc"></div></div>
+
+<script src="vendor/qr.js"></script>
+<script>
+"use strict";
+/* =========================================================
+   Werwolf – Düsterwald · digitaler Spielleiter
+   ========================================================= */
+const TEST = /[?&]test=1/.test(location.search);
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, TEST ? 0 : ms));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const any = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const LOGO = '<svg viewBox="0 0 512 512"><use href="#logo"/></svg>';
+const vib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+/* ---------- Speicher ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('ww2_' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('ww2_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+
+/* ---------- Rollen ---------- */
+const ROLES = {
+  werwolf:    {n:'Werwolf', i:'🐺', t:'wolf', d:'Wacht jede Nacht mit dem Rudel auf und reißt einen Dorfbewohner. Tagsüber tust du ganz unschuldig.'},
+  weisserwolf:{n:'Weißer Werwolf', i:'🤍', t:'solo', d:'Frisst mit dem Rudel, darf aber jede zweite Nacht heimlich einen anderen Werwolf töten. Du gewinnst nur, wenn du als Letzter übrig bist.'},
+  wildeskind: {n:'Wildes Kind', i:'🧒', t:'dorf', d:'In der ersten Nacht wählst du ein Vorbild. Solange es lebt, gehörst du zum Dorf. Stirbt es, wirst du zum Werwolf und wachst ab da mit dem Rudel auf.'},
+  engel:      {n:'Engel', i:'😇', t:'solo', d:'Du willst sterben! Wirst du in der ersten Nacht getötet oder bei der ersten Abstimmung hingerichtet, gewinnst du sofort allein. Sonst bist du ein einfacher Dorfbewohner.'},
+  seherin:    {n:'Seherin', i:'🔮', t:'dorf', d:'Jede Nacht blickst du in die Seele eines Spielers und erfährst seine wahre Rolle.'},
+  hexe:       {n:'Hexe', i:'🧪', t:'dorf', d:'Du siehst das Opfer der Werwölfe. Einmal im Spiel darfst du es mit dem Heiltrank retten, einmal darfst du jemanden vergiften.'},
+  amor:       {n:'Amor', i:'💘', t:'dorf', d:'In der ersten Nacht verliebst du zwei Spieler. Stirbt einer, stirbt der andere vor Kummer. Bleiben am Ende nur die zwei übrig, gewinnen sie gemeinsam.'},
+  beschuetzer:{n:'Beschützer', i:'🛡️', t:'dorf', d:'Jede Nacht beschützt du einen Spieler (auch dich selbst) vor den Werwölfen. Nicht zweimal hintereinander denselben.'},
+  fuchs:      {n:'Fuchs', i:'🦊', t:'dorf', d:'Jede Nacht beschnupperst du einen Spieler und seine beiden Nachbarn. Ist ein Werwolf dabei, erfährst du es. Riechst du keinen, verlierst du deine Nase.'},
+  rabe:       {n:'Rabe', i:'🐦‍⬛', t:'dorf', d:'Jede Nacht kannst du einen Verdächtigen markieren. Er startet die nächste Abstimmung mit zwei Stimmen gegen sich.'},
+  jaeger:     {n:'Jäger', i:'🏹', t:'dorf', d:'Wenn du stirbst, egal wie, schießt du mit letzter Kraft und reißt einen Spieler deiner Wahl mit in den Tod.'},
+  ritter:     {n:'Ritter', i:'⚔️', t:'dorf', d:'Töten dich die Werwölfe, stirbt in der folgenden Nacht der nächste Werwolf links von dir an deinem rostigen Schwert.'},
+  baer:       {n:'Bärenführer', i:'🐻', t:'dorf', d:'Jeden Morgen brummt dein Bär, wenn einer deiner direkten lebenden Nachbarn ein Werwolf ist.'},
+  aeltester:  {n:'Dorfältester', i:'👴', t:'dorf', d:'Du bist zäh: Den ersten Angriff der Werwölfe überlebst du einfach.'},
+  depp:       {n:'Dorfdepp', i:'🤪', t:'dorf', d:'Wirst du hingerichtet, erkennt das Dorf dich und lässt dich laufen. Danach darfst du aber nicht mehr abstimmen.'},
+  suendenbock:{n:'Sündenbock', i:'🐐', t:'dorf', d:'Gibt es bei einer Abstimmung Gleichstand, stirbst du statt der anderen.'},
+  maedchen:   {n:'Kleines Mädchen', i:'👧', t:'dorf', d:'Wenn die Werwölfe erwachen, darfst du heimlich blinzeln. Aber pass auf, dass sie dich nicht erwischen!'},
+  schwestern: {n:'Schwester', i:'👭', t:'dorf', g:2, gn:'Zwei Schwestern', d:'Ihr zwei kennt euch von Anfang an und könnt euch blind vertrauen.'},
+  brueder:    {n:'Bruder', i:'👬', t:'dorf', g:3, gn:'Drei Brüder', d:'Ihr drei kennt euch von Anfang an und könnt euch blind vertrauen.'},
+  dorf:       {n:'Dorfbewohner', i:'🧑‍🌾', t:'dorf', d:'Du hast keine besondere Fähigkeit, nur deinen Verstand. Finde die Werwölfe und stimme klug ab!'}
+};
+const TEAM = {dorf:'Dorf', wolf:'Werwölfe', solo:'Spielt allein'};
+const SPECIAL_ORDER = ['seherin','hexe','jaeger','amor','beschuetzer','maedchen','fuchs','rabe','depp','ritter','baer','weisserwolf','aeltester','suendenbock','wildeskind','engel','schwestern','brueder'];
+const GROUPS = [
+  ['Gegen alle', ['weisserwolf','wildeskind','engel']],
+  ['Dorf · mit Nachtaktion', ['seherin','hexe','amor','beschuetzer','fuchs','rabe']],
+  ['Dorf · mit Spezialregel', ['jaeger','ritter','baer','aeltester','depp','suendenbock','maedchen','schwestern','brueder']]
+];
+
+/* ---------- Einstellungen ---------- */
+const S = Object.assign({
+  players: [], wolves: 2, roles: ['seherin','hexe','amor','jaeger'],
+  voiceOn: true, voiceURI: '', pitch: 0.8, rate: 0.86,
+  soundOn: true, vol: 0.7, discuss: 3, voteMode: 'geheim', captain: true, reveal: true, callDead: true,
+  mpPlay: true, hostName: '', myName: '', showVotes: true, ghost: true
+}, store.get('settings', {}));
+const saveS = () => store.set('settings', S);
+
+/* =========================================================
+   AUDIO – Atmosphäre komplett synthetisch (kein Download nötig)
+   ========================================================= */
+const A = {
+  ctx: null, master: null, amb: null, sfx: null, verb: null, layers: {}, scn: 'none', timers: [],
+  init() {
+    if (this.ctx || TEST) return;
+    try {
+      const C = window.AudioContext || window.webkitAudioContext; this.ctx = new C();
+      const c = this.ctx;
+      this.master = c.createGain(); this.master.gain.value = S.soundOn ? S.vol : 0; this.master.connect(c.destination);
+      this.amb = c.createGain(); this.amb.gain.value = 1; this.amb.connect(this.master);
+      this.sfx = c.createGain(); this.sfx.gain.value = 1; this.sfx.connect(this.master);
+      // Hall
+      const len = c.sampleRate * 3.2, ir = c.createBuffer(2, len, c.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+      this.verb = c.createConvolver(); this.verb.buffer = ir;
+      const vg = c.createGain(); vg.gain.value = .55; this.verb.connect(vg); vg.connect(this.master);
+      // Rauschen
+      const nb = c.createBuffer(1, c.sampleRate * 3, c.sampleRate), nd = nb.getChannelData(0);
+      let last = 0; for (let i = 0; i < nd.length; i++) { const w = Math.random() * 2 - 1; last = (last + .02 * w) / 1.02; nd[i] = last * 3.5; }
+      this.noise = nb;
+      this.buildNight(); this.buildDay();
+    } catch (e) { this.ctx = null; }
+  },
+  resume() { if (this.ctx && this.ctx.state !== 'running') this.ctx.resume(); },
+  volume() { if (this.master) this.master.gain.setTargetAtTime(S.soundOn ? S.vol : 0, this.ctx.currentTime, .2); },
+  lfo(freq, depth, target, type = 'sine') {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = freq; g.gain.value = depth; o.connect(g); g.connect(target); o.start(); return o;
+  },
+  buildNight() {
+    const c = this.ctx, bus = c.createGain(); bus.gain.value = 0; bus.connect(this.amb);
+    // Wind: zwei Schichten gefiltertes Rauschen
+    [[380, .07, .5], [900, .045, .22]].forEach(([f, sp, vol]) => {
+      const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true;
+      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = .8;
+      const g = c.createGain(); g.gain.value = vol;
+      this.lfo(sp, f * .6, bp.frequency); this.lfo(sp * 1.3, vol * .7, g.gain);
+      s.connect(bp); bp.connect(g); g.connect(bus); s.start();
+    });
+    // Tiefe Drohne
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; lp.connect(bus);
+    const dg = c.createGain(); dg.gain.value = .09; dg.connect(lp); this.lfo(.05, .05, dg.gain);
+    [[55, 'sawtooth'], [55.35, 'sawtooth'], [82.4, 'triangle'], [41.2, 'sine']].forEach(([f, t]) => { const o = c.createOscillator(); o.type = t; o.frequency.value = f; o.connect(dg); o.start(); });
+    this.layers.night = bus;
+  },
+  buildDay() {
+    const c = this.ctx, bus = c.createGain(); bus.gain.value = 0; bus.connect(this.amb);
+    const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 600; bp.Q.value = .5;
+    const g = c.createGain(); g.gain.value = .12; s.connect(bp); bp.connect(g); g.connect(bus); s.start();
+    const pad = c.createGain(); pad.gain.value = .025; pad.connect(bus);
+    [196, 246.9, 293.7].forEach(f => { const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.connect(pad); o.start(); });
+    this.lfo(.08, .015, pad.gain);
+    this.layers.day = bus;
+  },
+  scene(name) {
+    if (!this.ctx) return; this.scn = name; const t = this.ctx.currentTime;
+    for (const k in this.layers) this.layers[k].gain.setTargetAtTime(k === name ? 1 : 0, t, 1.2);
+    this.timers.forEach(clearTimeout); this.timers = [];
+    const loop = (fn, a, b) => { const go = () => { fn(); this.timers.push(setTimeout(go, rnd(a, b))); }; this.timers.push(setTimeout(go, rnd(a * .4, b * .5))); };
+    if (name === 'night') { loop(() => this.owl(), 18000, 40000); loop(() => this.howl(.35), 35000, 70000); loop(() => this.creak(), 25000, 50000); }
+    if (name === 'day') { loop(() => this.bird(), 2500, 7000); }
+  },
+  duck(on) { if (this.amb) this.amb.gain.setTargetAtTime(on ? .38 : 1, this.ctx.currentTime, .25); },
+  env(g, t, a, peak, d) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + d); },
+  out(node, wet = .5) { node.connect(this.sfx); if (wet) { const w = this.ctx.createGain(); w.gain.value = wet; node.connect(w); w.connect(this.verb); } },
+  howl(vol = .6, base = 300) {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + .05;
+    [[base, 0, 1], [base * 1.26, .9, .6]].forEach(([f0, off, amp]) => {
+      const o = c.createOscillator(); o.type = 'sawtooth';
+      const f1 = c.createBiquadFilter(); f1.type = 'bandpass'; f1.frequency.value = 900; f1.Q.value = 4;
+      const f2 = c.createBiquadFilter(); f2.type = 'lowpass'; f2.frequency.value = 1800;
+      const g = c.createGain(); const s = t + off, dur = 3.4;
+      o.frequency.setValueAtTime(f0 * .7, s); o.frequency.exponentialRampToValueAtTime(f0 * 1.7, s + .9);
+      o.frequency.setValueAtTime(f0 * 1.7, s + 2.2); o.frequency.exponentialRampToValueAtTime(f0 * 1.15, s + dur);
+      const vib = c.createOscillator(), vg = c.createGain(); vib.frequency.value = 5.5; vg.gain.value = 7; vib.connect(vg); vg.connect(o.frequency); vib.start(s); vib.stop(s + dur);
+      g.gain.setValueAtTime(.0001, s); g.gain.exponentialRampToValueAtTime(vol * amp * .5, s + .6); g.gain.setValueAtTime(vol * amp * .5, s + 2.3); g.gain.exponentialRampToValueAtTime(.0001, s + dur);
+      o.connect(f1); f1.connect(f2); f2.connect(g); this.out(g, .9); o.start(s); o.stop(s + dur + .1);
+    });
+  },
+  bell(n = 3, f0 = 196) {
+    if (!this.ctx) return; const c = this.ctx;
+    for (let k = 0; k < n; k++) {
+      const t = c.currentTime + .05 + k * 1.9;
+      [[1, .5], [2, .25], [2.4, .18], [3, .12], [4.2, .08], [5.4, .05]].forEach(([m, a]) => {
+        const o = c.createOscillator(), g = c.createGain(); o.frequency.value = f0 * m; o.type = 'sine';
+        this.env(g, t, .005, a * .6, 4.5 / m * 1.5); o.connect(g); this.out(g, .7); o.start(t); o.stop(t + 7);
+      });
+    }
+  },
+  gong() {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + .03;
+    const o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(90, t); o.frequency.exponentialRampToValueAtTime(42, t + 2.5);
+    this.env(g, t, .01, .7, 3); o.connect(g); this.out(g, .8); o.start(t); o.stop(t + 3.5);
+    const s = c.createBufferSource(); s.buffer = this.noise; const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400;
+    const ng = c.createGain(); this.env(ng, t, .01, .5, .9); s.connect(lp); lp.connect(ng); this.out(ng, .6); s.start(t); s.stop(t + 1.2);
+  },
+  beat(n = 2) {
+    if (!this.ctx) return; const c = this.ctx;
+    for (let k = 0; k < n; k++) [0, .22].forEach((o2, j) => {
+      const t = c.currentTime + .03 + k * .85 + o2, o = c.createOscillator(), g = c.createGain();
+      o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(38, t + .18); this.env(g, t, .008, j ? .45 : .7, .25);
+      o.connect(g); this.out(g, .15); o.start(t); o.stop(t + .4);
+    });
+  },
+  chime() {
+    if (!this.ctx) return; const c = this.ctx;
+    [659, 784, 988, 1319].forEach((f, k) => { const t = c.currentTime + .03 + k * .09, o = c.createOscillator(), g = c.createGain(); o.frequency.value = f; this.env(g, t, .005, .12, 1.6); o.connect(g); this.out(g, .8); o.start(t); o.stop(t + 2); });
+  },
+  whoosh() {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + .02, s = c.createBufferSource(); s.buffer = this.noise;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.5; bp.frequency.setValueAtTime(200, t); bp.frequency.exponentialRampToValueAtTime(2400, t + .6);
+    const g = c.createGain(); this.env(g, t, .25, .35, .6); s.connect(bp); bp.connect(g); this.out(g, .5); s.start(t); s.stop(t + 1.2);
+  },
+  owl() {
+    if (!this.ctx) return; const c = this.ctx;
+    [0, .5, .8].forEach((o2, k) => { const t = c.currentTime + o2, o = c.createOscillator(), g = c.createGain(); o.frequency.setValueAtTime(k ? 380 : 420, t); o.frequency.linearRampToValueAtTime(k ? 350 : 390, t + .35);
+      this.env(g, t, .06, .07, .35); o.connect(g); this.out(g, .9); o.start(t); o.stop(t + .6); });
+  },
+  creak() {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain(), bp = c.createBiquadFilter();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(38, t); o.frequency.linearRampToValueAtTime(55, t + 1.1); bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = 6;
+    this.env(g, t, .2, .05, 1); o.connect(bp); bp.connect(g); this.out(g, .7); o.start(t); o.stop(t + 1.4);
+  },
+  bird() {
+    if (!this.ctx) return; const c = this.ctx, n = 2 + Math.floor(Math.random() * 4), f = rnd(2600, 4200);
+    for (let k = 0; k < n; k++) { const t = c.currentTime + k * .13, o = c.createOscillator(), g = c.createGain();
+      o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * rnd(1.15, 1.5), t + .07); this.env(g, t, .01, .035, .09); o.connect(g); this.out(g, .4); o.start(t); o.stop(t + .15); }
+  },
+  growl() {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + .02, o = c.createOscillator(), g = c.createGain(), lp = c.createBiquadFilter();
+    o.type = 'sawtooth'; o.frequency.value = 62; const am = c.createOscillator(), ag = c.createGain(); am.frequency.value = 23; ag.gain.value = .35; am.connect(ag); ag.connect(g.gain); am.start(t); am.stop(t + 2.2);
+    lp.type = 'lowpass'; lp.frequency.value = 500; g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + .4); g.gain.exponentialRampToValueAtTime(.0001, t + 2);
+    o.connect(lp); lp.connect(g); this.out(g, .4); o.start(t); o.stop(t + 2.2);
+  },
+  shot() {
+    if (!this.ctx) return; const c = this.ctx, t = c.currentTime + .02, s = c.createBufferSource(); s.buffer = this.noise;
+    const g = c.createGain(); this.env(g, t, .002, 1, .5); const hp = c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 300; s.connect(hp); hp.connect(g); this.out(g, 1); s.start(t); s.stop(t + .8);
+  }
+};
+
+/* =========================================================
+   ERZÄHLER – Sprachausgabe mit Pausen, Untertiteln & Ducking
+   ========================================================= */
+const V = {
+  list() { try { return speechSynthesis.getVoices().filter(v => /^de/i.test(v.lang)); } catch (e) { return []; } },
+  best() {
+    const vs = this.list(); if (!vs.length) return null;
+    if (S.voiceURI) { const v = vs.find(v => v.voiceURI === S.voiceURI); if (v) return v; }
+    const sc = v => { const n = v.name.toLowerCase(); let s = 0;
+      if (/premium|erweitert|enhanced|natural|neural/.test(n)) s += 10;
+      if (/online/.test(n)) s += 3;
+      if (/martin|markus|yannick|viktor|conrad|killian|florian|stefan|male/.test(n)) s += 4;
+      if (/google/.test(n)) s += 2; if (/de-de|deutschland/i.test(v.lang + n)) s += 1; return s; };
+    return vs.slice().sort((a, b) => sc(b) - sc(a))[0];
+  },
+  chain: Promise.resolve(), skip: false
+};
+if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = () => { if (window.onVoices) window.onVoices(); }; }
+
+function caption(t, sub) {
+  if (typeof MP !== 'undefined' && MP.host && MP.pub && MP.pub.ph && MP.pub.ph !== 'lobby') { MP.pub.cap = t || ''; sendPub(); }
+  const c = $('#cap');
+  if (!t) { c.classList.remove('on'); document.body.classList.remove('capon'); return; }
+  c.innerHTML = esc(t) + '<small>Tippen zum Überspringen</small>'; c.classList.add('on'); document.body.classList.add('capon');
+}
+$('#cap').addEventListener('click', () => { V.skip = true; try { speechSynthesis.cancel(); } catch (e) {} });
+
+function speakSeg(s) {
+  return new Promise(res => {
+    if (TEST) return res();
+    const est = 900 + s.length * 68 / S.rate;
+    let done = false, t;
+    const fin = () => { if (!done) { done = true; clearTimeout(t); clearInterval(sk); res(); } };
+    const sk = setInterval(() => { if (V.skip) fin(); }, 100);
+    if (!S.voiceOn || !('speechSynthesis' in window)) { t = setTimeout(fin, est * .85); return; }
+    const u = new SpeechSynthesisUtterance(s.replace(/…/g, '... '));
+    u.lang = 'de-DE'; const v = V.best(); if (v) u.voice = v; u.pitch = S.pitch; u.rate = S.rate; u.volume = 1;
+    u.onend = fin; u.onerror = fin; t = setTimeout(fin, est * 2.2 + 3000);
+    try { speechSynthesis.speak(u); } catch (e) { fin(); }
+  });
+}
+async function speakNow(text) {
+  const segs = text.split('|').map(s => s.trim()).filter(Boolean);
+  V.skip = false; A.duck(true);
+  for (const s of segs) { if (V.skip) break; caption(s); await speakSeg(s); if (!V.skip) await sleep(380); }
+  caption(''); A.duck(false); V.skip = false;
+}
+function say(text) { const p = V.chain.then(() => speakNow(text)); V.chain = p.catch(() => {}); return p; }
+
+/* ---------- Erzähltexte ---------- */
+const N = {
+  intro: ['Willkommen in Düsterwald.|Ein abgelegenes Dorf am Rande des schwarzen Waldes.|Seit Wochen verschwinden Menschen in der Nacht…|und man munkelt, einige von euch seien längst keine Menschen mehr.|Findet die Bestien, bevor sie euch finden.',
+          'Hört gut zu, Bewohner von Düsterwald.|Der Herbstmond ist zurückgekehrt, und mit ihm das Heulen in den Wäldern.|Unter euch sitzen Werwölfe. Sie lächeln euch an. Sie trinken mit euch.|Und heute Nacht… werden sie jagen.'],
+  night: ['Die Sonne versinkt blutrot hinter den Hügeln von Düsterwald.|Nebel kriecht durch die Gassen, und irgendwo heult ein Wolf.|Das Dorf schläft ein. Schließt jetzt eure Augen.',
+          'Die Nacht legt sich wie ein schwarzes Tuch über Düsterwald.|Die Kerzen erlöschen, eine nach der anderen.|Schließt die Augen… und betet, dass ihr den Morgen erlebt.',
+          'Der Vollmond steigt über den Kirchturm.|In den Wäldern regt sich etwas Hungriges.|Alle schließen jetzt die Augen.',
+          'Kalter Wind fährt durch die Fensterläden.|Die Hunde des Dorfes winseln… sie wissen, was kommt.|Schließt eure Augen, Bewohner von Düsterwald.'],
+  amor_w: ['Amor erwacht.|Nimm leise das Handy und schieße deine Pfeile auf zwei Herzen,|die von nun an im Leben und im Tod verbunden sind.'],
+  amor_s: ['Amor legt das Handy zurück, schließt die Augen und verschwindet in der Dunkelheit.'],
+  lovers_round: ['Hört mir genau zu.|Das Handy wandert nun einmal im Kreis.|Wer es in die Hand gedrückt bekommt, öffnet kurz die Augen und liest seine geheime Botschaft.|Danach gibt er es leise an den nächsten weiter und schließt wieder die Augen.'],
+  lovers_done: ['Alle Botschaften sind überbracht.|Zwei Herzen schlagen nun im selben Takt… doch niemand weiß, welche.'],
+  schwestern_w: ['Die zwei Schwestern erwachen.|Öffnet die Augen und erkennt einander.|Ein stummes Nicken… ein Bund für das Leben.'],
+  schwestern_s: ['Die Schwestern schließen die Augen wieder.'],
+  brueder_w: ['Die drei Brüder erwachen.|Öffnet die Augen und erkennt einander.|Blut ist dicker als Wasser.'],
+  brueder_s: ['Die Brüder schließen die Augen wieder.'],
+  wildeskind_w: ['Das wilde Kind erwacht.|Es streift durch das Dorf und sucht sich ein Vorbild.|Doch wehe… wenn dieses Vorbild stirbt.'],
+  wildeskind_s: ['Das wilde Kind rollt sich zusammen und schläft ein.'],
+  beschuetzer_w: ['Der Beschützer erwacht.|Er zieht sein Schild vom Haken.|Wen wirst du heute Nacht bewachen?'],
+  beschuetzer_s: ['Der Beschützer bezieht Stellung und schließt die Augen.'],
+  seherin_w: ['Die Seherin erwacht.|Ihre Kristallkugel beginnt im Dunkeln zu glühen.|Wessen Seele willst du heute Nacht erblicken?', 'Die Seherin erwacht.|Der Nebel in ihrer Kugel lichtet sich.|Wen willst du durchschauen?'],
+  seherin_s: ['Die Seherin schließt die Augen.|Was sie gesehen hat, bleibt ihr Geheimnis.'],
+  fuchs_w: ['Der Fuchs erwacht.|Seine Nase zuckt in der kalten Nachtluft.|Wen willst du beschnuppern?'],
+  fuchs_s: ['Der Fuchs verschwindet lautlos in seinem Bau.'],
+  werwoelfe_w: ['Die Werwölfe erwachen.|Ihre gelben Augen leuchten im Mondlicht.|Einigt euch lautlos auf ein Opfer… und tippt es auf dem Handy an.',
+                'Die Werwölfe erwachen.|Fell bricht durch ihre Haut, Krallen durch ihre Finger.|Wer wird heute Nacht euer Festmahl?'],
+  werwoelfe_s: ['Die Werwölfe haben gewählt.|Mit blutigen Lefzen schleichen sie zurück in ihre Betten und schließen die Augen.'],
+  weisserwolf_w: ['Der weiße Werwolf erwacht ein zweites Mal.|Heute Nacht darf er einen seiner eigenen Brüder zerfleischen… wenn er will.'],
+  weisserwolf_s: ['Der weiße Werwolf schließt die Augen. Niemand im Rudel ahnt etwas.'],
+  hexe_w: ['Die Hexe erwacht.|Ihr Kessel brodelt, grüner Dampf steigt auf.|Ich zeige dir, wen die Werwölfe gewählt haben.', 'Die Hexe erwacht.|Zwei Fläschchen stehen auf ihrem Regal.|Eines rettet… das andere tötet.'],
+  hexe_s: ['Die Hexe korkt ihre Fläschchen zu und schließt die Augen.'],
+  rabe_w: ['Der Rabe erwacht.|Lautlos kreist er über den Dächern.|Auf wessen Haus willst du dich setzen?'],
+  rabe_s: ['Der Rabe hat sich niedergelassen. Er schließt die Augen.'],
+  quiet: ['Die Nacht ist still…'],
+  dawn: ['Ein fahler Morgen dämmert über Düsterwald.|Die Hähne krähen, doch das Dorf ist seltsam still.|Öffnet eure Augen.',
+         'Die ersten Sonnenstrahlen kriechen über die Dächer.|Die Glocke der Kapelle läutet.|Wacht auf… alle, die noch können.',
+         'Der Nebel lichtet sich.|Ein Rabe krächzt auf dem Kirchturm.|Öffnet die Augen, Bewohner von Düsterwald.'],
+  nobody: ['Wie durch ein Wunder hat in dieser Nacht niemand sein Leben verloren.', 'Alle sind aufgewacht.|Die Bestien sind heute Nacht leer ausgegangen.'],
+  some: ['Doch nicht alle haben die Nacht überlebt…', 'Ein Schrei hallt durch die Gassen.|Jemand ist nicht mehr aufgewacht…'],
+  d_night: ['{name} wurde tot aufgefunden.', '{name} liegt leblos im Bett, die Augen weit aufgerissen.', 'Von {name} ist nur noch ein zerrissenes Nachthemd übrig.'],
+  d_love: ['{name} hält die kalte Hand von {other}…|und kann ohne die große Liebe nicht weiterleben.|{name} stirbt an gebrochenem Herzen.'],
+  d_vote: ['Das Dorf hat entschieden.|{name} wird zum Galgen geführt.', 'Die Fackeln lodern.|{name} wird vor das Dorf gezerrt… und hingerichtet.'],
+  d_hunter: ['Ein Schuss hallt durch das Tal.|{name} bricht zusammen.'],
+  d_knight: ['Ein Werwolf windet sich vor Schmerzen.|Das rostige Schwert des Ritters hat ihn vergiftet.|{name} ist tot.'],
+  d_scape: ['Gleichstand!|Und wie immer muss einer büßen, der nichts dafür kann.|Der Sündenbock {name} stirbt.'],
+  reveal: ['{name} war… {role}.'],
+  hunter: ['{name} war der Jäger!|Mit letzter Kraft reißt er sein Gewehr hoch.|Jäger, nimm das Handy. Wen nimmst du mit in den Tod?'],
+  captain_dead: ['Der Hauptmann {name} ist gefallen.|Mit letztem Atem ernennt er einen Nachfolger.|Nimm das Handy und wähle.'],
+  captain_vote: ['Bevor ihr euch gegenseitig an die Kehle geht, braucht Düsterwald einen Hauptmann.|Diskutiert und stimmt per Handzeichen ab.|Die Stimme des Hauptmanns zählt doppelt.'],
+  captain_set: ['{name} ist der neue Hauptmann von Düsterwald.|Möge er weise führen… oder wenigstens nicht gefressen werden.'],
+  bear_yes: ['Der Bär des Bärenführers brummt bedrohlich!|Direkt neben {name} lauert ein Werwolf…'],
+  bear_no: ['Der Bär liegt friedlich in der Morgensonne. Kein Brummen.'],
+  raven: ['Der Rabe sitzt auf dem Dach von {name}.|{name} beginnt die Abstimmung mit zwei Stimmen gegen sich.'],
+  discuss: ['Nun beginnt die Beratung.|Wer von euch trägt das Fell unter der Haut?|Ihr habt {min} Minuten.', 'Beratet euch, Bewohner von Düsterwald.|Jemand an diesem Tisch lügt euch ins Gesicht.|Ihr habt {min} Minuten.'],
+  discuss_free: ['Nun beginnt die Beratung.|Wer von euch trägt das Fell unter der Haut?'],
+  t30: ['Noch dreißig Sekunden.'],
+  vote: ['Die Zeit ist um.|Das Dorf muss sein Urteil fällen.'],
+  vote_secret: ['Die Abstimmung ist geheim.|Das Handy wandert von Hand zu Hand.|Niemand schaut dem anderen über die Schulter.'],
+  vote_open: ['Zeigt auf euren Verdächtigen.|Auf drei!|Eins… zwei… drei!'],
+  tie_cap: ['Gleichstand!|Der Hauptmann muss entscheiden, wer stirbt.'],
+  tie_none: ['Gleichstand.|Das Dorf ist zerstritten, und heute stirbt niemand.'],
+  depp: ['{name} steht schon unter dem Galgen…|doch dann erkennt das Dorf den Dorfdeppen und lässt ihn lachend laufen.|Ab jetzt darf er nicht mehr abstimmen.'],
+  angel: ['{name} war der Engel!|Früh zu sterben war sein einziger Wunsch.|Er steigt allein in den Himmel auf… und gewinnt das Spiel!'],
+  w_dorf: ['Der letzte Werwolf ist tot.|Die Glocken läuten, Menschen fallen sich in die Arme.|Düsterwald ist frei. Die Dorfbewohner haben gewonnen!'],
+  w_wolf: ['Stille.|Kein Mensch ist mehr übrig in Düsterwald.|Nur das Heulen der Werwölfe hallt durch die leeren Gassen.|Die Werwölfe haben gewonnen!'],
+  w_white: ['Am Ende steht nur noch einer.|Der weiße Werwolf hat Freund und Feind verschlungen.|Er gewinnt allein!'],
+  w_lovers: ['Nur noch zwei Herzen schlagen in Düsterwald.|Die Liebe hat über alles gesiegt.|Das Liebespaar gewinnt!'],
+  w_none: ['Niemand hat überlebt.|Düsterwald ist nun ein Dorf der Geister.'],
+  roles_mp: ['Willkommen in Düsterwald.|Schaut auf eure Handys.|Haltet eure Karte gedrückt, um eure Rolle zu sehen… und verratet sie niemandem.'],
+  night_mp: ['Die Sonne versinkt blutrot hinter den Hügeln von Düsterwald.|Nebel kriecht durch die Gassen.|Nehmt eure Handys… und haltet sie so, dass niemand mitlesen kann.',
+             'Die Nacht legt sich wie ein schwarzes Tuch über Düsterwald.|Jeder von euch blickt jetzt auf sein eigenes Handy.|Niemand schaut zum Nachbarn.',
+             'Der Vollmond steigt über den Kirchturm.|In den Wäldern regt sich etwas Hungriges.|Nehmt eure Handys zur Hand.'],
+  mp_phase1: ['Alle erwachen gleichzeitig.|Jeder von euch hat jetzt eine geheime Aufgabe.|Wer tippt, verrät nichts… denn alle tippen.', 'Schaut auf eure Handys.|Die Werwölfe jagen… die Seherin blickt in ihre Kugel…|und das Dorf flüstert seinen Verdacht.'],
+  mp_phase2: ['Die Nacht ist noch nicht vorbei.|Eine zweite Aufgabe erscheint auf euren Handys.', 'Irgendwo brodelt ein Kessel.|Schaut noch einmal auf eure Handys.'],
+  mp_night_end: ['Alle Züge sind gemacht.|Legt die Handys mit dem Bildschirm nach unten auf den Tisch.', 'Es wird still in Düsterwald.|Legt eure Handys ab… und wartet auf den Morgen.'],
+  vote_mp: ['Das Dorf muss sein Urteil fällen.|Jeder stimmt jetzt geheim auf seinem Handy ab.'],
+  captain_mp: ['Bevor ihr euch gegenseitig an die Kehle geht, braucht Düsterwald einen Hauptmann.|Stimmt auf euren Handys ab.|Seine Stimme zählt doppelt.'],
+  whisper: ['Das Dorf flüstert…|In dieser Nacht haben die meisten insgeheim {name} verdächtigt.']
+};
+const line = (k, v = {}) => any(N[k]).replace(/\{(\w+)\}/g, (_, x) => v[x] ?? '');
+
+/* =========================================================
+   UI-Grundbausteine (alle geben Promises zurück)
+   ========================================================= */
+const app = $('#app');
+function render(html) { app.innerHTML = '<div class="fade">' + html + '</div>'; window.scrollTo(0, 0); }
+function sceneScr(icon, title, sub = '', kicker = '') {
+  render(`<div class="scr scene">${kicker ? `<div class="kicker">${kicker}</div>` : ''}<div class="big">${icon}</div><h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>`);
+}
+function info({icon = '', kicker = '', title = '', html = '', btn = 'Weiter', delay = 0, cls = '', btnCls = 'primary'}) {
+  return new Promise(res => {
+    render(`<div class="scr scene ${cls}">${kicker ? `<div class="kicker">${kicker}</div>` : ''}${icon ? `<div class="big">${icon}</div>` : ''}<h2>${title}</h2>${html}
+      <div class="acts"><button class="btn ${btnCls}" id="ok" ${delay && !TEST ? 'disabled' : ''}>${btn}</button></div></div>`);
+    const b = $('#ok'); if (delay && !TEST) setTimeout(() => b.disabled = false, delay);
+    b.onclick = () => res();
+  });
+}
+function choice({icon = '', kicker = '', title, html = '', options}) {
+  return new Promise(res => {
+    render(`<div class="scr scene">${kicker ? `<div class="kicker">${kicker}</div>` : ''}${icon ? `<div class="big">${icon}</div>` : ''}<h2>${title}</h2>${html}
+      <div class="acts" style="flex-direction:column">${options.map((o, i) => `<button class="btn ${o.cls || ''}" data-i="${i}">${o.label}</button>`).join('')}</div></div>`);
+    app.querySelectorAll('[data-i]').forEach(b => b.onclick = () => res(options[+b.dataset.i].value));
+  });
+}
+/* Spielerauswahl: n = Anzahl, skip = Text für "niemand" */
+function pick({icon = '', kicker = '', title, sub = '', cands, n = 1, skip = null, ok = 'Bestätigen', tag = null, cls = '', extra = ''}) {
+  return new Promise(res => {
+    let sel = [];
+    render(`<div class="scr pick ${cls}">${kicker ? `<div class="kicker center">${kicker}</div>` : ''}${icon ? `<div class="ricon">${icon}</div>` : ''}<h2>${title}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}
+      <div class="grid">${cands.map(p => `<button class="opt" data-id="${p.id}">${esc(p.name)}${tag && tag(p) ? `<span class="tag">${tag(p)}</span>` : ''}</button>`).join('')}</div>${extra}
+      <div class="acts">${skip ? `<button class="btn ghost" id="skip">${skip}</button>` : ''}<button class="btn primary confirm" id="ok" disabled>${ok}</button></div></div>`);
+    const okB = $('#ok');
+    app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      const id = +b.dataset.id;
+      if (sel.includes(id)) sel = sel.filter(x => x !== id); else { if (n === 1) sel = []; if (sel.length < n) sel.push(id); }
+      app.querySelectorAll('.opt').forEach(o => o.classList.toggle('sel', sel.includes(+o.dataset.id)));
+      okB.disabled = sel.length !== n; vib(8);
+    });
+    okB.onclick = () => res(n === 1 ? sel[0] : sel);
+    if (skip) $('#skip').onclick = () => res(null);
+  });
+}
+/* Handy an jemanden weitergeben */
+function passTo(p, {hint = 'Nur diese Person schaut aufs Handy.', btn = null, step = null} = {}) {
+  return new Promise(res => {
+    const prog = step ? `<div class="prog">${Array.from({length: step[1]}, (_, i) => `<i class="${i < step[0] ? 'd' : ''}"></i>`).join('')}</div>` : '';
+    render(`<div class="scr pass">${prog}<div class="to">Gib das Handy an</div><div class="who">${esc(p.name)}</div><div class="hint">${hint}</div>
+      <button class="btn primary wide" id="ok">${btn || 'Ich bin ' + esc(p.name)}</button></div>`);
+    $('#ok').onclick = () => { vib(10); res(); };
+  });
+}
+/* Rollenkarte zum Gedrückthalten */
+function roleCard(p, extraTxt = '') {
+  const R = ROLES[p.role]; const t = isWolf(p) && p.role === 'wildeskind' ? 'wolf' : R.t;
+  return `<div class="flip" id="flip"><div class="in">
+    <div class="face back">${LOGO}<div class="ht">Gedrückt halten</div><div class="small mute" style="margin-top:6px">Niemand sonst darf hinschauen</div></div>
+    <div class="face front ${t}"><div class="ri">${R.i}</div><div class="rn">${R.n}</div><div class="tm ${t}">${TEAM[t]}</div><div class="rd">${R.d}</div>${extraTxt ? `<div class="rx">${extraTxt}</div>` : ''}</div>
+  </div></div>`;
+}
+function holdReveal(p, title, extraTxt, btn = 'Verstanden – weitergeben') {
+  return new Promise(res => {
+    render(`<div class="scr center"><div class="kicker">${esc(p.name)}</div><h2 style="color:var(--gold)">${title}</h2>${roleCard(p, extraTxt)}
+      <div class="acts"><button class="btn primary" id="ok" disabled>${btn}</button></div></div>`);
+    const f = $('#flip'), ok = $('#ok');
+    const on = e => { e.preventDefault(); f.classList.add('show'); ok.disabled = false; if (!f._s) { f._s = 1; A.whoosh(); vib(15); } };
+    const off = () => f.classList.remove('show');
+    f.addEventListener('pointerdown', on); f.addEventListener('pointerup', off); f.addEventListener('pointerleave', off); f.addEventListener('pointercancel', off);
+    f.addEventListener('contextmenu', e => e.preventDefault());
+    ok.onclick = () => { off(); res(); };
+  });
+}
+function flash(cls = '') { const d = document.createElement('div'); d.className = 'flash'; document.body.appendChild(d); setTimeout(() => d.remove(), 1500); }
+
+/* =========================================================
+   SPIEL
+   ========================================================= */
+let G = null;
+const byId = id => G.players.find(p => p.id === id);
+const alive = () => G.players.filter(p => p.alive);
+const has = r => G.deck.includes(r);
+const isWolf = p => p.role === 'werwolf' || p.role === 'weisserwolf' || (p.role === 'wildeskind' && G.wildTurned);
+const pack = () => alive().filter(isWolf);
+const roleName = p => ROLES[p.role].n + (p.role === 'wildeskind' && G.wildTurned ? ' (zum Werwolf geworden)' : '');
+const log = t => G.log.push({at: (G.phase === 'night' ? 'Nacht ' : 'Tag ') + G.round, t});
+function neighbors(p) { // nächste lebende Nachbarn links/rechts
+  const L = G.players, i = L.indexOf(p), res = [];
+  for (const dir of [1, -1]) { for (let k = 1; k < L.length; k++) { const q = L[(i + dir * k + L.length * 5) % L.length]; if (q === p) break; if (q.alive) { if (!res.includes(q)) res.push(q); break; } } }
+  return res;
+}
+function nextWolfFrom(seat) { const L = G.players; for (let k = 1; k <= L.length; k++) { const q = L[(seat + k) % L.length]; if (q.alive && isWolf(q)) return q; } return null; }
+
+let wakeLock = null;
+async function keepAwake() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && G && G.running) keepAwake(); });
+
+function buildDeck(n = S.players.length) {
+  const deck = [];
+  for (let i = 0; i < S.wolves; i++) deck.push('werwolf');
+  S.roles.forEach(r => { const g = ROLES[r].g || 1; for (let i = 0; i < g; i++) deck.push(r); });
+  while (deck.length < n) deck.push('dorf');
+  return deck;
+}
+
+async function startGame() {
+  A.init(); A.resume(); A.volume();
+  if (!TEST && 'speechSynthesis' in window) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
+  keepAwake();
+  const deck = buildDeck(), roles = shuffle(deck);
+  G = { running: true, round: 0, phase: 'setup', deck, log: [],
+    players: S.players.map((name, i) => ({id: i, name, role: roles[i], alive: true, cause: null})),
+    lovers: [], model: null, wildTurned: false, potHeal: true, potPoison: true, lastProtect: null, foxOn: true,
+    raven: null, captain: null, captainDone: false, elderHit: false, knightCurse: false, knightSeat: -1, deppOut: [], winner: null };
+  document.body.classList.add('ingame');
+  window.onbeforeunload = () => G && G.running ? 'Spiel läuft' : undefined;
+  await revealRoles();
+  A.scene('night'); setSky('night');
+  sceneScr(LOGO.replace('<svg', '<svg style="width:120px;height:120px;border-radius:28px"'), 'Düsterwald', 'Legt das Handy in die Mitte des Tisches.', 'Die Geschichte beginnt');
+  A.howl(.7);
+  await say(line('intro'));
+  try {
+    while (!G.winner) {
+      await night(); if (G.winner) break;
+      await morning(); if (G.winner) break;
+      await day();
+    }
+  } catch (e) { if (e !== 'abort') { console.error(e); } else return; }
+  await endScreen();
+}
+
+async function revealRoles() {
+  G.phase = 'setup';
+  await info({icon: '🃏', kicker: 'Vorbereitung', title: 'Rollen verteilen',
+    html: `<p class="mute">Das Handy wandert jetzt einmal reihum.<br>Jeder hält seine Karte gedrückt, merkt sich die Rolle und gibt das Handy weiter.</p>`, btn: 'Los geht\'s'});
+  const L = G.players;
+  for (let i = 0; i < L.length; i++) {
+    const p = L[i];
+    await passTo(p, {step: [i, L.length], hint: 'Die anderen schauen weg.'});
+    let ex = '';
+    if (isWolf(p)) { const m = L.filter(q => q !== p && isWolf(q)).map(q => q.name); ex = m.length ? 'Dein Rudel: ' + m.map(esc).join(', ') : 'Du jagst allein.'; }
+    if (p.role === 'schwestern' || p.role === 'brueder') ex = 'Deine Geschwister: ' + L.filter(q => q !== p && q.role === p.role).map(q => esc(q.name)).join(', ');
+    if (p.role === 'wildeskind') ex = 'Dein Vorbild wählst du in der ersten Nacht.';
+    if (p.role === 'amor') ex = 'In der ersten Nacht wirst du aufgerufen.';
+    await holdReveal(p, 'Deine Rolle', ex);
+  }
+  await info({icon: '🌕', kicker: 'Alle bereit?', title: 'Alle kennen ihre Rolle', html: '<p class="mute">Legt das Handy in die Mitte. Ab jetzt führt euch der Erzähler durch das Spiel.<br><br>🔊 Lautstärke hoch, Stummschalter aus!</p>', btn: 'Die erste Nacht beginnt'});
+}
+
+function setSky(m) { document.body.classList.toggle('day', m === 'day'); }
+
+/* ---------- Nacht ---------- */
+async function wake(role, act) {
+  // act(holder) – holder lebt; sonst Scheinaufruf, damit niemand erkennt, dass die Rolle tot ist
+  const holders = alive().filter(p => p.role === role);
+  const R = ROLES[role] || {i: '🐺', n: 'Werwölfe'};
+  if (!holders.length && !S.callDead) return;
+  const sp = say(line(role + '_w'));
+  if (holders.length && act) { await act(holders); await sp; }
+  else {
+    sceneScr('🌙', 'Die Nacht ist still…', 'Alle Augen bleiben geschlossen.');
+    await sp; await sleep(rnd(3500, 7000));
+  }
+  await say(line(role + '_s'));
+}
+
+async function night() {
+  G.round++; G.phase = 'night';
+  G.n = {victim: null, heal: false, poison: null, protect: null, white: null};
+  setSky('night'); A.scene('night');
+  sceneScr('🌙', 'Nacht ' + G.round, 'Alle schließen die Augen.', 'Die Nacht bricht herein');
+  await say(line('night'));
+  const first = G.round === 1;
+  if (first && has('amor')) await nightAmor();
+  if (first && has('schwestern')) await nightGroup('schwestern');
+  if (first && has('brueder')) await nightGroup('brueder');
+  if (first && has('wildeskind')) await wake('wildeskind', async ([p]) => {
+    G.model = await pick({icon: '🧒', kicker: 'Wildes Kind', title: 'Wähle dein Vorbild', sub: 'Stirbt es, wirst du zum Werwolf.', cands: alive().filter(q => q !== p)});
+    log(`Das wilde Kind (${p.name}) wählt ${byId(G.model).name} als Vorbild.`);
+    await info({icon: '🧒', title: 'Vorbild gewählt', html: `<p class="mute">Leg das Handy zurück und schließ die Augen.</p>`, btn: 'Fertig'});
+  });
+  if (has('beschuetzer')) await wake('beschuetzer', async ([p]) => {
+    const c = alive().filter(q => q.id !== G.lastProtect);
+    const id = await pick({icon: '🛡️', kicker: 'Beschützer', title: 'Wen beschützt du?', sub: G.lastProtect != null ? `${esc(byId(G.lastProtect).name)} darfst du nicht nochmal wählen.` : 'Du darfst auch dich selbst schützen.', cands: c});
+    G.n.protect = id; G.lastProtect = id; log(`Der Beschützer (${p.name}) bewacht ${byId(id).name}.`);
+  });
+  if (has('seherin')) await wake('seherin', async ([p]) => {
+    const id = await pick({icon: '🔮', kicker: 'Seherin', title: 'Wessen Rolle willst du sehen?', cands: alive().filter(q => q !== p)});
+    const t = byId(id); A.chime(); log(`Die Seherin (${p.name}) sieht: ${t.name} ist ${roleName(t)}.`);
+    await info({icon: ROLES[t.role].i, kicker: 'Die Kugel zeigt', title: `${esc(t.name)} ist…`, html: `<div class="tomb"><div class="rn">${roleName(t)}</div><div class="small mute">${isWolf(t) ? '🐺 Gehört zu den Werwölfen' : 'Kein Werwolf'}</div></div><p class="mute small">Merk es dir gut. Dann Handy zurücklegen.</p>`, btn: 'Gesehen', delay: 1200});
+  });
+  if (has('fuchs')) await wake('fuchs', G.foxOn ? async ([p]) => {
+    const id = await pick({icon: '🦊', kicker: 'Fuchs', title: 'Wen beschnupperst du?', sub: 'Ich prüfe ihn und seine beiden Nachbarn.', cands: alive()});
+    const t = byId(id), grp = [t, ...neighbors(t)], hit = grp.some(isWolf);
+    if (!hit) G.foxOn = false;
+    log(`Der Fuchs (${p.name}) beschnuppert ${grp.map(q => q.name).join(', ')}: ${hit ? 'Werwolf dabei' : 'kein Werwolf, Nase verloren'}.`);
+    await info({icon: hit ? '🐺' : '🌿', kicker: 'Deine Nase sagt', title: hit ? 'Hier riecht es nach Wolf!' : 'Nichts gerochen…',
+      html: `<p class="mute">Geprüft: ${grp.map(q => esc(q.name)).join(', ')}</p>${hit ? '' : '<p class="warn">Deine Nase ist verloren. Ab jetzt kannst du nicht mehr schnuppern.</p>'}`, btn: 'Gesehen', delay: 1000});
+  } : null);
+  await nightWolves();
+  if (has('weisserwolf') && (G.round % 2 === 0 || alive().every(isWolf))) await wake('weisserwolf', async ([p]) => {
+    const c = pack().filter(q => q !== p);
+    if (!c.length) { await info({icon: '🤍', title: 'Kein Bruder mehr übrig', btn: 'Fertig'}); return; }
+    const id = await pick({icon: '🤍', kicker: 'Weißer Werwolf', title: 'Welchen Werwolf zerfleischst du?', cands: c, skip: 'Heute niemanden', cls: 'wolf'});
+    if (id != null) { G.n.white = id; log(`Der weiße Werwolf (${p.name}) tötet ${byId(id).name}.`); }
+  });
+  if (has('hexe')) await wake('hexe', nightWitch);
+  if (has('rabe')) await wake('rabe', async ([p]) => {
+    const id = await pick({icon: '🐦‍⬛', kicker: 'Rabe', title: 'Wen verfluchst du?', sub: 'Er startet die Abstimmung mit +2 Stimmen.', cands: alive().filter(q => q !== p), skip: 'Niemanden'});
+    G.raven = id; if (id != null) log(`Der Rabe (${p.name}) markiert ${byId(id).name}.`);
+  });
+}
+
+async function nightAmor() {
+  await wake('amor', async ([p]) => {
+    const ids = await pick({icon: '💘', kicker: 'Amor', title: 'Wen verliebst du?', sub: 'Tippe genau zwei Spieler an (du darfst dich selbst wählen).', cands: alive(), n: 2, ok: 'Pfeile abschießen'});
+    G.lovers = ids; A.chime(); log(`Amor (${p.name}) verliebt ${ids.map(i => byId(i).name).join(' und ')}.`);
+    await info({icon: '💘', title: 'Die Pfeile fliegen…', html: '<p class="mute">Leg das Handy zurück in die Mitte und schließ die Augen.</p>', btn: 'Erledigt'});
+  });
+  // Geheime Botschaft: Jeder bekommt das Handy einmal – so erfahren die Verliebten es, ohne dass jemand die Augen öffnen muss
+  sceneScr('✉️', 'Geheime Botschaften', 'Das Handy wandert einmal im Kreis.', 'Nur wer das Handy hält, öffnet die Augen');
+  await say(line('lovers_round'));
+  const L = alive();
+  for (let i = 0; i < L.length; i++) {
+    const p = L[i];
+    await passTo(p, {step: [i, L.length], hint: 'Augen auf, Botschaft lesen, weitergeben, Augen zu.', btn: 'Ich bin ' + esc(p.name) + ' – Botschaft öffnen'});
+    const lov = G.lovers.includes(p.id), other = lov ? byId(G.lovers.find(x => x !== p.id)) : null;
+    await info(lov
+      ? {icon: '💞', kicker: 'Geheime Botschaft', title: 'Du bist verliebt!', html: `<div class="tomb"><div class="small mute">Dein Herz gehört</div><div class="rn">${esc(other.name)}</div></div><p class="mute small">Stirbt einer von euch, stirbt der andere vor Kummer. Bleibt am Ende nur ihr zwei übrig, gewinnt ihr gemeinsam, auch gegen euer eigenes Team.</p>`, btn: 'Gelesen – weitergeben', delay: 2500}
+      : {icon: '🕯️', kicker: 'Geheime Botschaft', title: 'Keine Botschaft für dich', html: `<p class="mute">Amors Pfeil hat dich verfehlt.<br>Warte kurz, damit niemand am Tempo etwas merkt.</p>`, btn: 'Gelesen – weitergeben', delay: 2500});
+  }
+  sceneScr('💞', 'Alle Botschaften überbracht', 'Legt das Handy zurück in die Mitte.');
+  await say(line('lovers_done'));
+}
+
+async function nightGroup(role) {
+  await wake(role, async (hs) => {
+    await info({icon: ROLES[role].i, kicker: ROLES[role].gn, title: 'Ihr gehört zusammen', html: `<div class="tomb">${hs.map(h => `<div class="rn">${esc(h.name)}</div>`).join('')}</div><p class="mute small">Schaut euch an und nickt euch zu.</p>`, btn: 'Wir kennen uns', delay: 1500});
+  });
+}
+
+async function nightWolves() {
+  const P = pack(), prey = alive().filter(p => !isWolf(p));
+  if (!prey.length) return;
+  const sp = say(line('werwoelfe_w'));
+  setTimeout(() => A.howl(.5, 260), 400);
+  const first = G.round === 1;
+  G.n.victim = await pick({icon: '🐺', kicker: 'Werwölfe', title: 'Wer wird gefressen?', cls: 'wolf', ok: 'Zerreißen',
+    sub: (first || G.wildTurned) ? `Euer Rudel: ${P.map(p => esc(p.name)).join(', ')}` : 'Einigt euch lautlos. Einer tippt.',
+    cands: prey});
+  log(`Die Werwölfe (${P.map(p => p.name).join(', ')}) wählen ${byId(G.n.victim).name}.`);
+  vib([30, 40, 30]);
+  await sp; await say(line('werwoelfe_s'));
+}
+
+async function nightWitch([p]) {
+  const v = G.n.victim != null ? byId(G.n.victim) : null;
+  if (v && G.potHeal) {
+    const heal = await choice({icon: '🧪', kicker: 'Hexe', title: `Die Werwölfe haben ${esc(v.name)} gewählt`, html: '<p class="mute">Willst du deinen Heiltrank benutzen? Er wirkt nur ein einziges Mal.</p>',
+      options: [{label: '💚 Ja, retten', value: true, cls: 'primary'}, {label: 'Nein', value: false, cls: 'ghost'}]});
+    if (heal) { G.potHeal = false; G.n.heal = true; log(`Die Hexe (${p.name}) rettet ${v.name}.`); }
+  } else if (v) {
+    await info({icon: '🧪', kicker: 'Hexe', title: `Die Werwölfe haben ${esc(v.name)} gewählt`, html: '<p class="mute">Dein Heiltrank ist leider aufgebraucht.</p>', btn: 'Weiter'});
+  }
+  if (G.potPoison) {
+    const id = await pick({icon: '☠️', kicker: 'Hexe', title: 'Willst du jemanden vergiften?', sub: 'Der Gifttrank wirkt nur ein einziges Mal.', cands: alive(), skip: 'Kein Gift', ok: 'Vergiften', cls: 'wolf'});
+    if (id != null) { G.potPoison = false; G.n.poison = id; log(`Die Hexe (${p.name}) vergiftet ${byId(id).name}.`); }
+  } else if (!G.potHeal) {
+    await info({icon: '🧪', kicker: 'Hexe', title: 'Deine Tränke sind leer', html: '<p class="mute">Warte kurz und leg das Handy zurück.</p>', btn: 'Fertig', delay: 2000});
+  }
+}
+
+/* ---------- Tod & Folgen ---------- */
+const CAUSE = {wolf: 'In der Nacht gestorben', poison: 'In der Nacht gestorben', white: 'In der Nacht gestorben', knight: 'Vom Schwert des Ritters vergiftet', love: 'An gebrochenem Herzen gestorben', vote: 'Vom Dorf hingerichtet', hunter: 'Vom Jäger erschossen', scape: 'Als Sündenbock geopfert'};
+async function killAll(list) {
+  const q = list.slice();
+  while (q.length) {
+    const {p, cause} = q.shift();
+    if (!p.alive) continue;
+    p.alive = false; p.cause = CAUSE[cause] + ' (' + (G.phase === 'night' || G.phase === 'morning' ? 'Nacht ' : 'Tag ') + G.round + ')';
+    log(`${p.name} stirbt (${CAUSE[cause]}) – war ${roleName(p)}.`);
+    // Ansage
+    const other = G.lovers.includes(p.id) ? byId(G.lovers.find(x => x !== p.id)) : null;
+    const key = {wolf: 'd_night', poison: 'd_night', white: 'd_night', love: 'd_love', vote: 'd_vote', hunter: 'd_hunter', knight: 'd_knight', scape: 'd_scape'}[cause];
+    const lovedOne = cause === 'love' ? (G.lovers.map(byId).find(x => x !== p) || {}).name : '';
+    flash(); A.gong(); vib([60, 50, 120]);
+    sceneScr(cause === 'love' ? '💔' : cause === 'vote' || cause === 'scape' ? '⚖️' : cause === 'hunter' ? '🏹' : '🪦', esc(p.name), CAUSE[cause], '† Tot');
+    app.firstChild.classList.add('dead');
+    await say(line(key, {name: p.name, other: lovedOne}));
+    await info({icon: S.reveal ? ROLES[p.role].i : '🪦', kicker: '† ' + CAUSE[cause], title: esc(p.name), cls: 'dead',
+      html: S.reveal ? `<div class="tomb"><div class="small mute">war</div><div class="rn">${roleName(p)}</div></div>` : '<p class="mute">Die Rolle bleibt ein Geheimnis.</p>', btn: 'Weiter', delay: 800,
+    });
+    if (S.reveal) {/* Rolle wird angezeigt, aber nicht vorgelesen, um Zeit zu sparen */}
+    // Engel
+    if (p.role === 'engel' && G.round === 1) { G.winner = 'engel'; G.angel = p; await say(line('angel', {name: p.name})); return; }
+    // Liebende
+    if (other && other.alive) q.unshift({p: other, cause: 'love'});
+    // Wildes Kind
+    if (G.model === p.id && !G.wildTurned) { const k = G.players.find(x => x.role === 'wildeskind'); if (k && k.alive) { G.wildTurned = true; log(`${k.name} (Wildes Kind) verliert sein Vorbild und wird zum Werwolf.`); } }
+    // Jäger
+    if (p.role === 'jaeger') {
+      A.growl();
+      await say(line('hunter', {name: p.name}));
+      const c = alive();
+      if (c.length) {
+        const id = await pick({icon: '🏹', kicker: 'Letzter Schuss', title: `${esc(p.name)}, wen nimmst du mit?`, cands: c, ok: 'Schießen', cls: 'wolf'});
+        A.shot(); q.unshift({p: byId(id), cause: 'hunter'});
+      }
+    }
+    // Hauptmann
+    if (G.captain === p.id) {
+      G.captain = null; const c = alive().filter(x => !q.some(e => e.p === x));
+      if (c.length) {
+        await say(line('captain_dead', {name: p.name}));
+        const id = await pick({icon: '🎖️', kicker: 'Nachfolger', title: `${esc(p.name)}, wer wird neuer Hauptmann?`, cands: c});
+        G.captain = id; log(`${byId(id).name} wird neuer Hauptmann.`); await say(line('captain_set', {name: byId(id).name}));
+      }
+    }
+  }
+}
+
+function checkWin() {
+  if (G.winner) return G.winner;
+  const L = alive(), P = L.filter(isWolf);
+  if (!L.length) G.winner = 'none';
+  else if (L.length === 2 && G.lovers.length === 2 && L.every(p => G.lovers.includes(p.id))) G.winner = 'lovers';
+  else if (L.length === 1 && L[0].role === 'weisserwolf') G.winner = 'white';
+  else if (!P.length) G.winner = 'dorf';
+  else if (P.length === L.length && !P.some(p => p.role === 'weisserwolf' && P.length > 1)) G.winner = 'wolf';
+  return G.winner;
+}
+
+/* ---------- Morgen ---------- */
+async function morning() {
+  G.phase = 'morning'; setSky('day'); A.scene('day'); A.bell(3);
+  sceneScr('🌅', 'Tag ' + G.round, 'Öffnet eure Augen.', 'Der Morgen graut');
+  await say(line('dawn'));
+  const deaths = [], add = (p, cause) => { if (p && p.alive && !deaths.some(d => d.p === p)) deaths.push({p, cause}); };
+  if (G.knightCurse) { G.knightCurse = false; add(nextWolfFrom(G.knightSeat), 'knight'); }
+  const v = G.n.victim != null ? byId(G.n.victim) : null;
+  if (v && v.alive) {
+    if (G.n.protect === v.id) log(`${v.name} wurde vom Beschützer gerettet.`);
+    else if (G.n.heal) {}
+    else if (v.role === 'aeltester' && !G.elderHit) { G.elderHit = true; log(`${v.name} (Dorfältester) überlebt den Angriff.`); }
+    else { add(v, 'wolf'); if (v.role === 'ritter') { G.knightCurse = true; G.knightSeat = G.players.indexOf(v); } }
+  }
+  if (G.n.white != null) add(byId(G.n.white), 'white');
+  if (G.n.poison != null) add(byId(G.n.poison), 'poison');
+  if (!deaths.length) {
+    A.chime(); sceneScr('🕊️', 'Niemand ist gestorben', 'Alle haben die Nacht überlebt.');
+    await say(line('nobody'));
+  } else {
+    sceneScr('🩸', deaths.length > 1 ? deaths.length + ' Tote' : 'Ein Toter', 'Die Nacht hat ihren Tribut gefordert.');
+    document.body.classList.add('blood'); setTimeout(() => document.body.classList.remove('blood'), 4000);
+    await say(line('some'));
+    await killAll(shuffle(deaths));
+  }
+  if (checkWin()) return;
+  // Bär
+  const b = alive().find(p => p.role === 'baer');
+  if (b) {
+    const hit = neighbors(b).some(isWolf);
+    if (hit) { A.growl(); sceneScr('🐻', 'Der Bär brummt!', `Neben ${esc(b.name)} lauert ein Werwolf.`); await say(line('bear_yes', {name: b.name})); }
+    else { sceneScr('🐻', 'Der Bär bleibt ruhig', ''); await say(line('bear_no')); }
+  }
+}
+
+/* ---------- Tag ---------- */
+async function day() {
+  G.phase = 'day';
+  if (S.captain && !G.captainDone) {
+    G.captainDone = true;
+    sceneScr('🎖️', 'Hauptmannswahl', 'Seine Stimme zählt doppelt.');
+    await say(line('captain_vote'));
+    const id = await pick({icon: '🎖️', kicker: 'Hauptmannswahl', title: 'Wer wurde gewählt?', sub: 'Stimmt per Handzeichen ab und tippt den Gewinner an.', cands: alive()});
+    G.captain = id; log(`${byId(id).name} wird Hauptmann.`); A.chime();
+    await say(line('captain_set', {name: byId(id).name}));
+  }
+  const rv = G.raven != null ? byId(G.raven) : null;
+  if (rv && !rv.alive) G.raven = null;
+  if (G.raven != null) { sceneScr('🐦‍⬛', 'Der Rabe hat gesprochen', `${esc(rv.name)} startet mit +2 Stimmen.`); await say(line('raven', {name: rv.name})); }
+  await discussion();
+  await vote();
+  G.raven = null;
+}
+
+function discussion() {
+  return new Promise(async res => {
+    let left = S.discuss * 60, paused = false, warned = false, iv;
+    const total = Math.max(left, 1), R = 120, C = 2 * Math.PI * R;
+    const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    const L = alive();
+    render(`<div class="scr center">
+      <div class="kicker">Tag ${G.round} · Beratung</div><h2 style="color:var(--gold)">Wer ist der Werwolf?</h2>
+      ${S.discuss ? `<div class="timer" id="tm"><svg viewBox="0 0 260 260"><circle cx="130" cy="130" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/><circle id="arc" cx="130" cy="130" r="${R}" fill="none" stroke="var(--gold2)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear"/></svg><div class="t" id="tt">${fmt(left)}</div></div>
+      <div class="row" style="justify-content:center"><button class="btn sm" id="minus">−30 s</button><button class="btn sm" id="pause">⏸ Pause</button><button class="btn sm" id="plus">+1 Min</button></div>` : '<div class="big" style="font-size:4rem;margin:20px 0">🗣️</div>'}
+      <div class="chips" style="justify-content:center;margin-top:18px">${L.map(p => `<span class="chip">${esc(p.name)}${G.captain === p.id ? ' 🎖️' : ''}${G.deppOut.includes(p.id) ? ' 🤪' : ''}</span>`).join('')}</div>
+      <div class="acts"><button class="btn blood" id="go">⚖️ Zur Abstimmung</button></div></div>`);
+    const done = () => { clearInterval(iv); res(); };
+    $('#go').onclick = async () => { clearInterval(iv); await say(line('vote')); res(); };
+    if (S.discuss) {
+      $('#pause').onclick = e => { paused = !paused; e.target.textContent = paused ? '▶ Weiter' : '⏸ Pause'; };
+      $('#plus').onclick = () => { left += 60; warned = false; };
+      $('#minus').onclick = () => { left = Math.max(5, left - 30); };
+      const tick = () => {
+        if (!$('#tt')) return clearInterval(iv);
+        $('#tt').textContent = fmt(left); $('#arc').style.strokeDashoffset = C * (1 - left / Math.max(total, left));
+        $('#tm').classList.toggle('low', left <= 10);
+        if (left === 30 && !warned) { warned = true; say(line('t30')); }
+        if (left <= 10 && left > 0) A.beat(1);
+        if (left <= 0) { clearInterval(iv); A.bell(1, 147); say(line('vote')).then(done); return; }
+        if (!paused) left--;
+      };
+      iv = setInterval(tick, TEST ? 1 : 1000);
+    }
+    say(S.discuss ? line('discuss', {min: S.discuss}) : line('discuss_free'));
+  });
+}
+
+async function vote() {
+  const L = alive(), voters = L.filter(p => !G.deppOut.includes(p.id));
+  const tally = {}; L.forEach(p => tally[p.id] = 0);
+  if (G.raven != null && tally[G.raven] != null) tally[G.raven] += 2;
+  if (S.voteMode === 'geheim') {
+    sceneScr('🗳️', 'Geheime Abstimmung', 'Das Handy wandert reihum.');
+    await say(line('vote_secret'));
+    for (let i = 0; i < voters.length; i++) {
+      const v = voters[i];
+      await passTo(v, {step: [i, voters.length], hint: 'Stimme geheim ab. Niemand schaut zu.'});
+      const id = await pick({icon: '🗳️', kicker: esc(v.name) + (G.captain === v.id ? ' · Hauptmann (2 Stimmen)' : ''), title: 'Wer soll sterben?', cands: L.filter(p => p !== v), skip: 'Enthaltung', ok: 'Stimme abgeben', cls: 'wolf'});
+      if (id != null) tally[id] += G.captain === v.id ? 2 : 1;
+      vib(15);
+    }
+  } else {
+    sceneScr('☝️', 'Offene Abstimmung', 'Alle zeigen gleichzeitig.');
+    await say(line('vote_open'));
+    await new Promise(res => {
+      const cnt = {}; L.forEach(p => cnt[p.id] = 0); let cap = null;
+      const draw = () => {
+        render(`<div class="scr"><div class="kicker center">Offene Abstimmung</div><h2 class="center" style="color:var(--gold)">Stimmen zählen</h2>
+          <p class="center mute small">Tippe für jeden Spieler ein, wie viele auf ihn zeigen. ${voters.length} Stimmberechtigte.${G.raven != null ? ' Der Rabe zählt automatisch +2.' : ''}</p>
+          <div>${L.map(p => `<div class="vrow"><span class="nm">${esc(p.name)}${G.raven === p.id ? ' 🐦‍⬛' : ''}</span><button class="ib" data-m="${p.id}">−</button><b>${cnt[p.id]}</b><button class="ib" data-p="${p.id}">+</button></div>`).join('')}</div>
+          ${G.captain != null && byId(G.captain).alive ? `<div class="card"><label class="small mute">🎖️ Hauptmann ${esc(byId(G.captain).name)} hat gezeigt auf (zählt doppelt):</label><select id="cap2" style="width:100%;margin-top:6px"><option value="">–</option>${L.filter(p => p.id !== G.captain).map(p => `<option value="${p.id}" ${cap === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>` : ''}
+          <div class="acts"><button class="btn blood confirm" id="ok">Auswerten</button></div></div>`);
+        app.querySelectorAll('[data-p]').forEach(b => b.onclick = () => { cnt[b.dataset.p]++; draw(); });
+        app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { cnt[b.dataset.m] = Math.max(0, cnt[b.dataset.m] - 1); draw(); });
+        const cs = $('#cap2'); if (cs) cs.onchange = () => { cap = cs.value === '' ? null : +cs.value; };
+        $('#ok').onclick = () => { L.forEach(p => tally[p.id] += cnt[p.id]); if (cap != null) tally[cap] += 1; res(); };
+      };
+      draw();
+    });
+  }
+  // Ergebnis
+  const max = Math.max(...Object.values(tally));
+  const top = max > 0 ? L.filter(p => tally[p.id] === max) : [];
+  const sorted = L.slice().sort((a, b) => tally[b.id] - tally[a.id]);
+  A.beat(3);
+  render(`<div class="scr"><div class="kicker center">Das Urteil</div><h2 class="center" style="color:var(--gold)">Die Stimmen</h2>
+    <div class="bars">${sorted.map(p => `<div class="bar ${top.includes(p) ? 'top' : ''}"><i data-w="${max ? tally[p.id] / max * 100 : 0}" style="width:0"></i><span>${esc(p.name)}</span><span>${tally[p.id]}</span></div>`).join('')}</div></div>`);
+  requestAnimationFrame(() => setTimeout(() => app.querySelectorAll('.bar i').forEach(i => i.style.width = i.dataset.w + '%'), 50));
+  await sleep(2600);
+  let target = null, cause = 'vote';
+  log(`Abstimmung: ${sorted.filter(p => tally[p.id]).map(p => p.name + ' ' + tally[p.id]).join(', ') || 'keine Stimmen'}.`);
+  if (top.length === 1) target = top[0];
+  else if (top.length > 1) {
+    const sb = alive().find(p => p.role === 'suendenbock');
+    if (sb) { target = sb; cause = 'scape'; }
+    else if (G.captain != null && byId(G.captain).alive) {
+      sceneScr('🎖️', 'Gleichstand!', 'Der Hauptmann entscheidet.'); await say(line('tie_cap'));
+      const id = await pick({icon: '🎖️', kicker: 'Hauptmann ' + esc(byId(G.captain).name), title: 'Wer stirbt?', cands: top, ok: 'Urteil fällen', cls: 'wolf'});
+      target = byId(id);
+    } else { sceneScr('🤷', 'Gleichstand', 'Heute stirbt niemand.'); await say(line('tie_none')); log('Gleichstand – niemand stirbt.'); return; }
+  } else { sceneScr('🤷', 'Keine Stimmen', 'Heute stirbt niemand.'); await say(line('tie_none')); return; }
+  if (target.role === 'depp' && cause === 'vote' && !G.deppOut.includes(target.id)) {
+    G.deppOut.push(target.id); log(`${target.name} ist der Dorfdepp und überlebt, darf aber nicht mehr abstimmen.`);
+    sceneScr('🤪', esc(target.name), 'ist der Dorfdepp!'); await say(line('depp', {name: target.name}));
+    await info({icon: '🤪', title: esc(target.name) + ' überlebt', html: '<p class="mute">…darf aber ab jetzt nicht mehr abstimmen.</p>', btn: 'Weiter'});
+    return;
+  }
+  await killAll([{p: target, cause}]);
+  checkWin();
+}
+
+/* ---------- Spielende ---------- */
+async function endScreen() {
+  G.running = false; window.onbeforeunload = null;
+  try { if (wakeLock) wakeLock.release(); } catch (e) {}
+  const w = G.winner;
+  const T = {dorf: ['🌄', 'Das Dorf gewinnt!', 'w_dorf'], wolf: ['🐺', 'Die Werwölfe gewinnen!', 'w_wolf'], white: ['🤍', 'Der weiße Werwolf gewinnt!', 'w_white'],
+    lovers: ['💞', 'Das Liebespaar gewinnt!', 'w_lovers'], engel: ['😇', 'Der Engel gewinnt!', null], none: ['👻', 'Niemand gewinnt', 'w_none']}[w];
+  if (w === 'wolf' || w === 'white') { setSky('night'); A.scene('night'); A.howl(.8); setTimeout(() => A.howl(.6, 340), 1500); }
+  else { setSky('day'); A.scene('day'); A.bell(5, 220); }
+  const conf = w === 'wolf' ? '🩸' : w === 'lovers' ? '💖' : '✨';
+  for (let i = 0; i < 40; i++) setTimeout(() => { const s = document.createElement('div'); s.className = 'confetti'; s.textContent = conf; s.style.left = rnd(0, 100) + 'vw'; s.style.animationDuration = rnd(2.5, 5) + 's'; document.body.appendChild(s); setTimeout(() => s.remove(), 5200); }, i * 90);
+  render(`<div class="win"><div class="hero"><div class="big" style="font-size:5rem">${T[0]}</div></div><h1>${T[1]}</h1>
+    <p class="center mute">Nach ${G.round} ${G.round === 1 ? 'Nacht' : 'Nächten'}${G.angel ? ` · ${esc(G.angel.name)} war der Engel` : ''}</p>
+    <div class="card"><h3>🃏 Alle Rollen</h3><table class="tbl">${G.players.map(p => `<tr><td>${ROLES[p.role].i}</td><td><b class="${p.alive ? '' : 'strike'}">${esc(p.name)}</b>${G.lovers.includes(p.id) ? ' 💘' : ''}${G.captain === p.id ? ' 🎖️' : ''}<div class="small mute">${roleName(p)}</div></td><td class="small mute" style="text-align:right">${p.alive ? '✅ lebt' : esc(p.cause || '')}</td></tr>`).join('')}</table></div>
+    <details class="card"><summary><h3>📜 Was wirklich geschah</h3></summary><div class="log">${G.log.map(l => `<div><b>${l.at}</b> · ${esc(l.t)}</div>`).join('')}</div></details>
+    <div class="acts" style="flex-direction:column"><button class="btn primary endagain" id="again">🔁 Nochmal mit denselben Spielern</button><button class="btn ghost" id="setup">Spieler oder Rollen ändern</button></div></div>`);
+  document.body.classList.remove('ingame');
+  $('#again').onclick = () => startGame();
+  $('#setup').onclick = () => { A.scene('none'); setSky('night'); setup(); };
+  if (T[2]) await say(line(T[2]));
+  window.__lastWinner = w;
+}
+
+/* =========================================================
+   MENÜ (während des Spiels)
+   ========================================================= */
+const ov = $('#ov'), ovc = $('#ovc');
+function openOv(html) { ovc.innerHTML = html; ov.classList.add('on'); ov.scrollTop = 0; }
+function closeOv() { ov.classList.remove('on'); ovc.innerHTML = ''; }
+$('#menuBtn').onclick = () => {
+  if (MP.on) return mpMenu();
+  openOv(`<div class="hero">${LOGO}<h1 style="font-size:1.6rem">Menü</h1></div>
+    <div class="acts" style="flex-direction:column">
+      <button class="btn" id="m_role">🃏 Meine Rolle nochmal ansehen</button>
+      <button class="btn" id="m_snd">${S.soundOn ? '🔊 Atmosphäre an' : '🔇 Atmosphäre aus'}</button>
+      <button class="btn" id="m_voice">${S.voiceOn ? '🗣️ Erzählerstimme an' : '🤐 Erzählerstimme aus (nur Text)'}</button>
+      <button class="btn" id="m_rules">📖 Regeln & Rollen</button>
+      <button class="btn blood" id="m_quit">Spiel abbrechen</button>
+      <button class="btn primary" id="m_close">Zurück zum Spiel</button></div>
+    <p class="center mute small" style="margin-top:14px">Lebend: ${G ? alive().map(p => esc(p.name) + (G.captain === p.id ? ' 🎖️' : '')).join(', ') : ''}</p>`);
+  $('#m_close').onclick = closeOv;
+  $('#m_snd').onclick = () => { S.soundOn = !S.soundOn; saveS(); A.volume(); $('#menuBtn').onclick(); };
+  $('#m_voice').onclick = () => { S.voiceOn = !S.voiceOn; saveS(); if (!S.voiceOn) try { speechSynthesis.cancel(); } catch (e) {} $('#menuBtn').onclick(); };
+  $('#m_rules').onclick = () => rulesOv(true);
+  $('#m_quit').onclick = () => { if (confirm('Spiel wirklich abbrechen?')) { closeOv(); try { speechSynthesis.cancel(); } catch (e) {} G.running = false; window.onbeforeunload = null; location.reload(); } };
+  $('#m_role').onclick = () => {
+    openOv(`<h2 class="center" style="color:var(--gold)">Wer bist du?</h2><p class="center mute">Tippe deinen Namen. Die anderen schauen weg.</p>
+      <div class="grid">${G.players.map(p => `<button class="opt" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div><div class="acts"><button class="btn ghost" id="bk">Zurück</button></div>`);
+    $('#bk').onclick = () => $('#menuBtn').onclick();
+    ovc.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      const p = byId(+b.dataset.id);
+      let ex = isWolf(p) ? 'Dein Rudel: ' + G.players.filter(q => q !== p && isWolf(q)).map(q => esc(q.name) + (q.alive ? '' : ' †')).join(', ') : '';
+      if (G.lovers.includes(p.id)) ex += (ex ? '<br>' : '') + '💘 Verliebt in ' + esc(byId(G.lovers.find(x => x !== p.id)).name);
+      if (p.role === 'wildeskind' && G.model != null) ex += (ex ? '<br>' : '') + 'Vorbild: ' + esc(byId(G.model).name);
+      if (p.role === 'hexe') ex += (ex ? '<br>' : '') + `Heiltrank: ${G.potHeal ? 'voll' : 'leer'} · Gifttrank: ${G.potPoison ? 'voll' : 'leer'}`;
+      openOv(`<div class="center"><div class="kicker">${esc(p.name)}</div><h2 style="color:var(--gold)">Deine Rolle</h2>${roleCard(p, ex)}<div class="acts"><button class="btn primary" id="done">Fertig</button></div></div>`);
+      const f = ovc.querySelector('#flip');
+      const on = e => { e.preventDefault(); f.classList.add('show'); }, off = () => f.classList.remove('show');
+      f.addEventListener('pointerdown', on); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => f.addEventListener(ev, off));
+      $('#done').onclick = closeOv;
+    });
+  };
+};
+function rulesOv(fromMenu) {
+  openOv(`<h2 style="color:var(--gold)">📖 So funktioniert's</h2>
+  <div class="card small"><p><b>📱 Jeder mit eigenem Handy (empfohlen):</b> Der Spielleiter erstellt einen Raum, alle scannen den QR-Code. Jeder sieht seine Rolle nur auf seinem Handy. <b>Nachts bekommen alle gleichzeitig eine Aufgabe</b>: Werwölfe jagen gemeinsam (sie sehen live, wen die anderen antippen), Rollen nutzen ihre Fähigkeit, und alle anderen geben einen geheimen Verdacht ab. Weil alle tippen und gleich lange warten, verrät niemand etwas. In einer zweiten Runde erfährt die Hexe das Opfer, und die Verliebten bekommen ihre Botschaft. Abgestimmt wird am Tag ebenfalls am Handy.</p></div>
+  <h3 style="color:var(--gold)">🎲 Ein-Handy-Modus</h3>
+  <div class="card small"><p><b>1. Rollen verteilen:</b> Das Handy geht reihum. Jeder hält seine Karte gedrückt, nur er sieht sie.</p>
+  <p><b>2. Nacht:</b> Das Handy liegt in der Mitte, alle haben die Augen zu. Der Erzähler ruft die Rollen auf. Wer aufgerufen wird, öffnet leise die Augen, nimmt das Handy, tippt seine Wahl und legt es zurück.</p>
+  <p><b>3. Geheime Botschaften:</b> Wenn jemand etwas erfahren muss, ohne aufgerufen zu werden (z. B. die Verliebten), wandert das Handy einmal im Kreis. <i>Jeder</i> bekommt eine Nachricht, damit niemand verrät, wen es betrifft.</p>
+  <p><b>4. Tag:</b> Die Toten werden verkündet. Dann beratet ihr mit Timer und stimmt ab, entweder geheim am Handy oder offen per Fingerzeig.</p>
+  <p><b>5. Tote Rollen</b> werden trotzdem weiter aufgerufen (abschaltbar), damit niemand merkt, wer schon gestorben ist.</p>
+  <p><b>Tipp:</b> Tippt auf den Untertitel, um den Erzähler zu überspringen. Im Menü ☰ kann jeder heimlich seine Rolle nochmal ansehen.</p></div>
+  <h3 style="color:var(--gold)">Die Rollen</h3>
+  ${Object.entries(ROLES).map(([k, r]) => `<div class="role" style="cursor:default"><div class="ic">${r.i}</div><div><b>${r.gn || r.n}</b> <span class="tm ${r.t}" style="font-size:.6rem;padding:1px 6px;border-radius:10px;border:1px solid">${TEAM[r.t]}</span><div class="d">${r.d}</div></div></div>`).join('')}
+  <div class="acts"><button class="btn primary" id="rc">Schließen</button></div>`);
+  $('#rc').onclick = () => fromMenu ? $('#menuBtn').onclick() : closeOv();
+}
+
+/* =========================================================
+   START-BILDSCHIRM, EINSTELLUNGEN & ROLLENWAHL
+   ========================================================= */
+function preset(n) {
+  const w = n <= 5 ? 1 : n <= 8 ? 2 : n <= 12 ? 3 : 4;
+  const minVill = Math.ceil(n * .22), slots = Math.max(1, n - w - minVill);
+  const r = []; let used = 0;
+  for (const k of SPECIAL_ORDER) { const g = ROLES[k].g || 1; if (k === 'brueder' || k === 'schwestern') continue; if (used + g <= slots) { r.push(k); used += g; } }
+  return {w, r};
+}
+function cardCount() { return S.wolves + S.roles.reduce((s, r) => s + (ROLES[r].g || 1), 0); }
+function rolesSection(n) {
+  const cards = cardCount(), vill = Math.max(0, n - cards);
+  const why = n < 4 ? `Ihr braucht mindestens 4 Spieler (noch ${4 - n}).` : cards > n ? `Zu viele Rollen: ${cards} Karten für ${n} Spieler. Schalte ${cards - n} aus.` : '';
+  return `<div class="card"><h3>🃏 Rollen</h3>
+    <button class="btn wide" id="preset">✨ Empfohlen für ${Math.max(n, 4)} Spieler</button>
+    <div class="row" style="margin-top:14px"><span style="font-size:1.6rem">🐺</span><div class="grow"><b style="font-family:Cinzel">Werwölfe</b><div class="small mute">Empfohlen: etwa jeder vierte Spieler</div></div>
+      <div class="counter"><button class="ib" id="wm">−</button><b>${S.wolves}</b><button class="ib" id="wp">+</button></div></div>
+    ${GROUPS.map(([g, ks]) => `<div class="tgroup">${g}</div><div class="roles">${ks.map(k => { const r = ROLES[k]; return `<div class="role ${S.roles.includes(k) ? 'on' : ''}" data-role="${k}"><div class="ic">${r.i}</div><div><b>${r.gn || r.n}</b><div class="d">${r.d}</div></div><div class="sw"></div></div>`; }).join('')}</div>`).join('')}
+    <div class="tgroup">Im Spiel</div>
+    <div class="chips"><span class="chip">🐺 ×${S.wolves}</span>${S.roles.map(k => `<span class="chip">${ROLES[k].i} ${ROLES[k].gn || ROLES[k].n}</span>`).join('')}${vill ? `<span class="chip">🧑‍🌾 ×${vill}</span>` : ''}</div>
+    ${why ? `<div class="warn">⚠️ ${why}</div>` : ''}</div>`;
+}
+function bindRoles(n, rer) {
+  const keepY = fn => () => { const y = window.scrollY; fn(); saveS(); rer(); window.scrollTo(0, y); };
+  $('#preset').onclick = keepY(() => { const p = preset(Math.max(n, 4)); S.wolves = p.w; S.roles = p.r; });
+  $('#wm').onclick = keepY(() => { S.wolves = Math.max(1, S.wolves - 1); });
+  $('#wp').onclick = keepY(() => { S.wolves = Math.min(6, S.wolves + 1); });
+  app.querySelectorAll('[data-role]').forEach(b => b.onclick = keepY(() => { const k = b.dataset.role; S.roles = S.roles.includes(k) ? S.roles.filter(x => x !== k) : [...S.roles, k]; }));
+}
+function settingsSection(mp) {
+  const vs = V.list(), cur = V.best();
+  return `<details class="card" id="setd" ${store.get('setopen', false) ? 'open' : ''}><summary><h3>⚙️ Erzähler & Einstellungen</h3></summary>
+    <div class="set" style="margin-top:12px">
+      <div><label>🗣️ Erzählerstimme${mp ? ' (spricht nur auf diesem Handy)' : ''}</label>
+        <select id="voice" style="width:100%">${vs.length ? vs.map(v => `<option value="${esc(v.voiceURI)}" ${cur && cur.voiceURI === v.voiceURI ? 'selected' : ''}>${esc(v.name)}</option>`).join('') : '<option>Standardstimme</option>'}</select>
+        <p class="small mute" style="margin:6px 2px 0">Für die schaurigste Stimme am iPhone: <i>Einstellungen → Bedienungshilfen → Gesprochene Inhalte → Stimmen → Deutsch</i> und dort z. B. <b>„Martin (Premium)“</b> laden. Danach hier auswählen.</p></div>
+      <div><label>Tiefe der Stimme</label><input type="range" id="pitch" min="0.4" max="1.3" step="0.05" value="${S.pitch}"></div>
+      <div><label>Erzähltempo</label><input type="range" id="rate" min="0.6" max="1.15" step="0.02" value="${S.rate}"></div>
+      <button class="btn sm" id="ptest">▶️ Probe hören</button>
+      <div class="tog" id="t_voice"><div class="sw ${S.voiceOn ? 'on' : ''}"></div><span>Erzähler spricht laut (sonst nur Untertitel)</span></div>
+      <div class="tog" id="t_snd"><div class="sw ${S.soundOn ? 'on' : ''}"></div><span>Gruselige Atmosphäre (Wind, Wölfe, Glocken)</span></div>
+      <div><label>Lautstärke Atmosphäre</label><input type="range" id="vol" min="0" max="1" step="0.05" value="${S.vol}"></div>
+      <div><label>⏳ Diskussionszeit am Tag</label><div class="seg" id="disc">${[0, 2, 3, 5, 8].map(m => `<button data-v="${m}" class="${S.discuss === m ? 'on' : ''}">${m ? m + ' Min' : 'Ohne'}</button>`).join('')}</div></div>
+      ${mp ? `<div class="tog" id="t_votes"><div class="sw ${S.showVotes ? 'on' : ''}"></div><span>🗳️ Nach der Abstimmung zeigen, wer wen gewählt hat</span></div>
+      <div class="tog" id="t_ghost"><div class="sw ${S.ghost ? 'on' : ''}"></div><span>👻 Tote sehen alle Rollen (Geisterblick)</span></div>`
+      : `<div><label>🗳️ Abstimmung</label><div class="seg" id="vmode"><button data-v="geheim" class="${S.voteMode === 'geheim' ? 'on' : ''}">Geheim am Handy</button><button data-v="offen" class="${S.voteMode === 'offen' ? 'on' : ''}">Offen (Fingerzeig)</button></div></div>
+      <div class="tog" id="t_dead"><div class="sw ${S.callDead ? 'on' : ''}"></div><span>Tote Rollen weiter aufrufen (verrät nichts)</span></div>`}
+      <div class="tog" id="t_cap"><div class="sw ${S.captain ? 'on' : ''}"></div><span>🎖️ Hauptmannswahl am ersten Tag</span></div>
+      <div class="tog" id="t_rev"><div class="sw ${S.reveal ? 'on' : ''}"></div><span>Rolle der Toten aufdecken</span></div>
+    </div></details>`;
+}
+function bindSettings(rer) {
+  const keep = fn => () => { const y = window.scrollY; fn(); saveS(); rer(); window.scrollTo(0, y); };
+  const on = (id, fn) => { const e = $(id); if (e) e.onclick = keep(fn); };
+  $('#setd').ontoggle = e => store.set('setopen', e.target.open);
+  $('#voice').onchange = e => { S.voiceURI = e.target.value; saveS(); };
+  $('#pitch').oninput = e => { S.pitch = +e.target.value; saveS(); };
+  $('#rate').oninput = e => { S.rate = +e.target.value; saveS(); };
+  $('#vol').oninput = e => { S.vol = +e.target.value; saveS(); A.volume(); };
+  $('#ptest').onclick = () => { A.init(); A.resume(); A.volume(); try { speechSynthesis.cancel(); } catch (e) {} V.chain = Promise.resolve(); A.scene('night'); setTimeout(() => A.howl(.5), 200); say('Die Nacht bricht herein über Düsterwald.|Schließt eure Augen…|Die Werwölfe erwachen.').then(() => A.scene('none')); };
+  on('#t_voice', () => S.voiceOn = !S.voiceOn);
+  on('#t_snd', () => { S.soundOn = !S.soundOn; A.volume(); });
+  on('#t_cap', () => S.captain = !S.captain);
+  on('#t_rev', () => S.reveal = !S.reveal);
+  on('#t_dead', () => S.callDead = !S.callDead);
+  on('#t_votes', () => S.showVotes = !S.showVotes);
+  on('#t_ghost', () => S.ghost = !S.ghost);
+  app.querySelectorAll('#disc button').forEach(b => b.onclick = keep(() => S.discuss = +b.dataset.v));
+  app.querySelectorAll('#vmode button').forEach(b => b.onclick = keep(() => S.voteMode = b.dataset.v));
+  window.onVoices = () => { const sel = $('#voice'); if (sel && sel.options.length <= 1 && !(G && G.running)) { const y = window.scrollY; rer(); window.scrollTo(0, y); } };
+}
+
+/* Startbildschirm: Modus wählen */
+function home() {
+  document.body.classList.remove('ingame');
+  render(`
+  <div class="hero">${LOGO}<h1>Werwolf</h1><p>Die Nächte von Düsterwald</p></div>
+  <div class="card"><h3>📱 Jeder mit seinem eigenen Handy <span class="chip" style="margin-left:auto;font-size:.7rem">Empfohlen</span></h3>
+    <p class="small mute" style="margin-top:4px">Jeder sieht seine Rolle und macht seine Züge geheim auf dem eigenen Handy. Nachts tippen <b>alle gleichzeitig</b>, so verrät niemand etwas. Ein Handy erzählt die Geschichte.</p>
+    <div class="acts" style="flex-direction:column;margin-top:10px">
+      <button class="btn primary" id="h_host">🌕 Spiel erstellen (ich bin Spielleiter)</button>
+      <button class="btn" id="h_join">🔗 Spiel beitreten</button></div></div>
+  <div class="card"><h3>🎲 Nur ein Handy</h3>
+    <p class="small mute" style="margin-top:4px">Das Handy wird herumgereicht und liegt nachts in der Mitte.</p>
+    <div class="acts"><button class="btn ghost" id="h_single">Ein-Handy-Modus</button></div></div>
+  <p class="foot"><a href="#" id="rules">📖 Regeln & alle Rollen</a></p>`);
+  $('#h_host').onclick = () => mpHostStart();
+  $('#h_join').onclick = () => mpJoinScreen('');
+  $('#h_single').onclick = () => setup();
+  $('#rules').onclick = e => { e.preventDefault(); rulesOv(false); };
+}
+
+/* Ein-Handy-Modus: Einrichtung */
+function setup() {
+  document.body.classList.remove('ingame');
+  const n = S.players.length, ok = n >= 4 && S.wolves >= 1 && cardCount() <= n;
+  render(`
+  <div class="row" style="justify-content:space-between"><button class="btn sm ghost" id="back">‹ Zurück</button><span class="kicker">Ein-Handy-Modus</span></div>
+  <div class="hero" style="padding-top:4px">${LOGO}<h1>Werwolf</h1><p>Die Nächte von Düsterwald</p></div>
+  <div class="card"><h3>👥 Mitspieler <span class="mute small" style="margin-left:auto">${n}</span></h3>
+    <div class="row"><input type="text" id="pname" placeholder="Name eingeben…" maxlength="18" enterkeyhint="done" autocomplete="off"><button class="btn sm primary" id="padd" style="min-height:46px">＋</button></div>
+    <p class="small mute" style="margin:8px 2px 0">Im Uhrzeigersinn eintragen, so wie ihr sitzt (wichtig für Fuchs, Bär und Ritter).</p>
+    <ul class="plist">${S.players.map((p, i) => `<li><span class="nm">${esc(p)}</span><button class="ib" data-up="${i}">‹</button><button class="ib" data-dn="${i}">›</button><button class="ib" data-rm="${i}">✕</button></li>`).join('')}</ul>
+    ${n ? `<button class="btn sm ghost" id="pshuf" style="margin-top:10px">🎲 Sitzordnung mischen</button>` : ''}
+  </div>
+  ${rolesSection(n)}
+  ${settingsSection(false)}
+  <p class="foot"><a href="#" id="rules">📖 Regeln & alle Rollen</a></p>
+  <div class="sticky"><div class="in"><button class="btn primary wide" id="start" ${ok ? '' : 'disabled'} style="min-height:58px;font-size:1.1rem">🌕 Spiel starten</button></div></div>`);
+  const add = () => { const i = $('#pname'), v = i.value.trim(); if (!v) return; if (S.players.some(p => p.toLowerCase() === v.toLowerCase())) { i.classList.add('shake'); setTimeout(() => i.classList.remove('shake'), 500); return; } S.players.push(v); saveS(); setup(); setTimeout(() => $('#pname').focus(), 30); };
+  $('#back').onclick = home;
+  $('#padd').onclick = add; $('#pname').onkeydown = e => { if (e.key === 'Enter') add(); };
+  app.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { S.players.splice(+b.dataset.rm, 1); saveS(); setup(); });
+  app.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const i = +b.dataset.up; if (i > 0) { [S.players[i - 1], S.players[i]] = [S.players[i], S.players[i - 1]]; saveS(); setup(); } });
+  app.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { const i = +b.dataset.dn; if (i < S.players.length - 1) { [S.players[i + 1], S.players[i]] = [S.players[i], S.players[i + 1]]; saveS(); setup(); } });
+  if ($('#pshuf')) $('#pshuf').onclick = () => { if (confirm('Sitzordnung zufällig mischen? Setzt euch dann bitte in dieser Reihenfolge hin.')) { S.players = shuffle(S.players); saveS(); setup(); } };
+  bindRoles(n, setup); bindSettings(setup);
+  $('#rules').onclick = e => { e.preventDefault(); rulesOv(false); };
+  $('#start').onclick = () => startGame();
+}
+
+/* =========================================================
+   MEHRSPIELER – jeder spielt mit seinem eigenen Handy
+   Verbindung: MQTT über WebSocket (öffentliche Server, kein Konto nötig)
+   Alles Private ist Ende-zu-Ende verschlüsselt (ECDH + AES-GCM).
+   ========================================================= */
+// Reihenfolge = Vorrang. Port 443 zuerst, weil Firmen-/Schulnetze andere Ports oft sperren.
+const BROKERS = (() => { const m = location.search.match(/[?&]broker=([^&]+)/); return m ? decodeURIComponent(m[1]).split(',') : ['wss://mqtt.eclipseprojects.io:443/mqtt', 'wss://broker.hivemq.com:8884/mqtt', 'wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt']; })();
+const TP = 'wwdw1/';
+
+/* ---------- Minimaler MQTT-3.1.1-Client ---------- */
+class MQ {
+  constructor(url) { this.url = url; this.subs = new Set(); this.pid = 1; this.buf = new Uint8Array(0); this.closed = false; this.q = []; this.onmsg = null; this.onstate = null; this.up = false; }
+  static str(s) { const b = TE.encode(s); const o = new Uint8Array(2 + b.length); o[0] = b.length >> 8; o[1] = b.length & 255; o.set(b, 2); return o; }
+  static pkt(h, parts) {
+    let len = parts.reduce((a, p) => a + p.length, 0); const body = len; const rl = [];
+    do { let d = len % 128; len = Math.floor(len / 128); if (len > 0) d |= 128; rl.push(d); } while (len > 0);
+    const o = new Uint8Array(1 + rl.length + body); o[0] = h; o.set(rl, 1); let off = 1 + rl.length;
+    for (const p of parts) { o.set(p, off); off += p.length; } return o;
+  }
+  connect() {
+    return new Promise((res, rej) => {
+      let ok = false, ws;
+      try { ws = new WebSocket(this.url, ['mqtt']); } catch (e) { rej(e); return; }
+      ws.binaryType = 'arraybuffer'; this.ws = ws; this.buf = new Uint8Array(0);
+      const to = setTimeout(() => { if (!ok) { try { ws.close(); } catch (e) {} rej(new Error('timeout')); } }, 7000);
+      ws.onopen = () => {
+        const cid = 'wwdw' + Math.random().toString(36).slice(2, 12);
+        this.raw(MQ.pkt(0x10, [new Uint8Array([0, 4, 77, 81, 84, 84, 4, 2, 0, 30]), MQ.str(cid)]));
+      };
+      ws.onmessage = e => this.feed(new Uint8Array(e.data), rc => { if (rc === 0) { ok = true; clearTimeout(to); res(); } else { clearTimeout(to); rej(new Error('refused ' + rc)); } });
+      ws.onerror = () => {};
+      ws.onclose = () => {
+        clearTimeout(to); clearInterval(this.ping);
+        if (!ok) { rej(new Error('closed')); return; }
+        this.up = false; this.onstate && this.onstate(false);
+        if (!this.closed) setTimeout(() => this.reconnect(), 1500);
+      };
+    });
+  }
+  async reconnect() { if (this.closed) return; try { await this.connect(); this.afterConnect(); } catch (e) { setTimeout(() => this.reconnect(), 2500); } }
+  afterConnect() {
+    this.up = true;
+    for (const t of this.subs) this._sub(t);
+    clearInterval(this.ping); this.ping = setInterval(() => this.raw(new Uint8Array([0xC0, 0])), 20000);
+    const q = this.q; this.q = []; q.forEach(p => this.raw(p));
+    this.onstate && this.onstate(true);
+  }
+  feed(chunk, onAck) {
+    const b = new Uint8Array(this.buf.length + chunk.length); b.set(this.buf); b.set(chunk, this.buf.length); this.buf = b;
+    for (;;) {
+      const B = this.buf; if (B.length < 2) return;
+      let mul = 1, len = 0, i = 1, d;
+      do { if (i >= B.length) return; d = B[i++]; len += (d & 127) * mul; mul *= 128; } while (d & 128);
+      if (B.length < i + len) return;
+      const h = B[0], body = B.subarray(i, i + len); this.buf = B.slice(i + len);
+      const type = h >> 4;
+      if (type === 2) onAck(body[1]);
+      else if (type === 3) {
+        const qos = (h >> 1) & 3, tl = (body[0] << 8) | body[1]; const topic = TD.decode(body.subarray(2, 2 + tl)); let off = 2 + tl;
+        if (qos > 0) { const pid = (body[off] << 8) | body[off + 1]; off += 2; this.raw(new Uint8Array([qos === 1 ? 0x40 : 0x50, 2, pid >> 8, pid & 255])); }
+        const payload = TD.decode(body.subarray(off));
+        try { this.onmsg && this.onmsg(topic, payload); } catch (e) { console.error(e); }
+      } else if (type === 6) { // PUBREL (QoS 2) -> PUBCOMP
+        this.raw(new Uint8Array([0x70, 2, body[0], body[1]]));
+      }
+    }
+  }
+  raw(u8) { if (this.ws && this.ws.readyState === 1) { try { this.ws.send(u8); } catch (e) {} } }
+  nid() { this.pid = (this.pid % 65000) + 1; return this.pid; }
+  sub(t) { this.subs.add(t); if (this.up) this._sub(t); }
+  _sub(t) { const id = this.nid(); this.raw(MQ.pkt(0x82, [new Uint8Array([id >> 8, id & 255]), MQ.str(t), new Uint8Array([1])])); }
+  pub(t, s, retain = false) {
+    const id = this.nid();
+    const p = MQ.pkt(0x30 | 2 | (retain ? 1 : 0), [MQ.str(t), new Uint8Array([id >> 8, id & 255]), TE.encode(s)]);
+    if (this.up && this.ws && this.ws.readyState === 1) this.raw(p); else { this.q.push(p); if (this.q.length > 300) this.q.shift(); }
+  }
+  close() { this.closed = true; try { this.raw(new Uint8Array([0xE0, 0])); this.ws.close(); } catch (e) {} clearInterval(this.ping); }
+}
+
+/* ---------- Verschlüsselung ---------- */
+const TE = new TextEncoder(), TD = new TextDecoder();
+const b64 = u => { u = new Uint8Array(u); let s = ''; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
+const ub64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const CR = {
+  async room(code) {
+    const base = await crypto.subtle.importKey('raw', TE.encode(code), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey({name: 'PBKDF2', salt: TE.encode('duesterwald:' + code), iterations: 40000, hash: 'SHA-256'}, base, {name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
+  },
+  pair() { return crypto.subtle.generateKey({name: 'ECDH', namedCurve: 'P-256'}, true, ['deriveKey']); },
+  async pub(kp) { return b64(await crypto.subtle.exportKey('raw', kp.publicKey)); },
+  async shared(kp, pubB64) {
+    const pk = await crypto.subtle.importKey('raw', ub64(pubB64), {name: 'ECDH', namedCurve: 'P-256'}, false, []);
+    return crypto.subtle.deriveKey({name: 'ECDH', public: pk}, kp.privateKey, {name: 'AES-GCM', length: 256}, false, ['encrypt', 'decrypt']);
+  },
+  async seal(k, o) { const iv = crypto.getRandomValues(new Uint8Array(12)); const ct = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, k, TE.encode(JSON.stringify(o))); return b64(iv) + '.' + b64(ct); },
+  async open(k, s) { const [i, d] = s.split('.'); const pt = await crypto.subtle.decrypt({name: 'AES-GCM', iv: ub64(i)}, k, ub64(d)); return JSON.parse(TD.decode(pt)); }
+};
+const genCode = () => { const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = ''; const r = crypto.getRandomValues(new Uint8Array(5)); for (const x of r) s += A[x % A.length]; return s; };
+
+/* ---------- QR-Code als SVG ---------- */
+function qrSVG(text) {
+  try {
+    const {QRCode, ECL} = window.QRCodeLib; const q = new QRCode(-1, ECL.M); q.addData(text); q.make();
+    const n = q.getModuleCount(), m = 2; let r = '';
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q.isDark(y, x)) r += `M${x + m} ${y + m}h1v1h-1z`;
+    return `<svg viewBox="0 0 ${n + 2 * m} ${n + 2 * m}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#f4ead2"/><path d="${r}" fill="#07060d"/></svg>`;
+  } catch (e) { return ''; }
+}
+
+/* ---------- Zustand ---------- */
+const MP = { on: false, host: false, code: '', mq: null, rk: null, kp: null, players: [], pub: {}, me: null, seq: 0, rid: 0, tid: 0, fx: 0, bIdx: 0, netOk: false };
+const joinLink = () => `${location.origin}${location.pathname}#r=${MP.code}.${MP.bIdx}`;
+
+/* Alle Server gleichzeitig probieren; der erste, der antwortet, gewinnt */
+function netOpen(list) {
+  return new Promise((res, rej) => {
+    let left = list.length, won = false;
+    list.forEach((u, i) => {
+      const m = new MQ(u);
+      m.connect().then(() => { if (won) { m.close(); return; } won = true; m.afterConnect(); res({mq: m, idx: i}); },
+        () => { m.closed = true; if (--left === 0 && !won) rej(new Error('Keine Verbindung zum Spielserver')); });
+    });
+  });
+}
+function secureOK() { return window.isSecureContext && window.crypto && crypto.subtle; }
+const NET_HELP = 'Im Firmen-, Schul- oder Hotel-WLAN sind solche Verbindungen oft gesperrt. Schalte WLAN aus und probier es mit <b>mobilen Daten</b> (oder über den Hotspot eines Handys).';
+const FILE_HELP = 'Öffne das Spiel bitte über den Link <b>hussien888.github.io/werwolf</b> und nicht als Datei vom Computer, sonst funktioniert die Verschlüsselung nicht.';
+function connScreen(title, sub) { render(`<div class="scr scene"><div class="big">🕯️</div><h2>${title}</h2><p>${sub}</p></div>`); }
+function errScreen(title, sub, retry) {
+  render(`<div class="scr scene"><div class="big">🌫️</div><h2>${title}</h2><p>${sub}</p><div class="acts" style="flex-direction:column">${retry ? '<button class="btn primary" id="retry">Nochmal versuchen</button>' : ''}<button class="btn ghost" id="eback">Zurück zum Start</button></div></div>`);
+  if (retry) $('#retry').onclick = retry; $('#eback').onclick = () => mpLeave();
+}
+function mpLeave() {
+  try { if (MP.host && MP.mq) MP.mq.pub(TP + MP.code + '/info', '', true); } catch (e) {}
+  setTimeout(() => { try { MP.mq && MP.mq.close(); } catch (e) {} location.hash = ''; location.reload(); }, 300);
+}
+
+/* =========================================================
+   SPIELLEITER (Host)
+   ========================================================= */
+async function mpHostStart() {
+  if (!secureOK()) return errScreen('So geht es nicht', FILE_HELP);
+  connScreen('Raum wird erstellt…', 'Verbinde mit dem Spielserver');
+  try {
+    MP.on = true; MP.host = true; MP.code = genCode();
+    MP.rk = await CR.room(MP.code); MP.kp = await CR.pair(); MP.hostPub = await CR.pub(MP.kp);
+    const {mq, idx} = await netOpen(BROKERS); MP.mq = mq; MP.bIdx = Math.max(0, idx); MP.netOk = true;
+    mq.onmsg = (t, s) => hostMsg(t, s).catch(e => console.error(e));
+    mq.onstate = ok => { MP.netOk = ok; if (ok) { publishInfo(); sendPub(); MP.players.forEach(sendPriv); } netDot(); };
+    mq.sub(TP + MP.code + '/up');
+    publishInfo();
+    MP.players = []; if (S.mpPlay) addHostPlayer();
+    MP.pub = {ph: 'lobby', code: MP.code};
+    setInterval(() => { if (!MP.host) return; const now = Date.now(); let ch = false; MP.players.forEach(p => { if (!p.local) { const c = now - (p.last || 0) < 22000; if (c !== p.conn) { p.conn = c; ch = true; } } }); if (ch && MP.pub.ph === 'lobby') hostLobbyRefresh(); sendPub(); }, 5000);
+    window.addEventListener('pagehide', () => { try { MP.mq.pub(TP + MP.code + '/info', '', true); } catch (e) {} });
+    hostLobby();
+  } catch (e) {
+    console.error(e); MP.on = false; MP.host = false;
+    errScreen('Keine Verbindung', 'Keiner der Spielserver ist von hier aus erreichbar. ' + NET_HELP, mpHostStart);
+  }
+}
+function publishInfo() { CR.seal(MP.rk, {hostPub: MP.hostPub, v: 1}).then(s => MP.mq.pub(TP + MP.code + '/info', s, true)); }
+function addHostPlayer() {
+  if (MP.players.some(p => p.local)) return;
+  const p = {id: 0, cid: 'host', name: (S.hostName || 'Spielleiter').trim().slice(0, 18), local: true, conn: true};
+  MP.players.unshift(p); MP.me = p;
+}
+function removeHostPlayer() { MP.players = MP.players.filter(p => !p.local); MP.me = null; }
+
+async function hostMsg(t, s) {
+  if (!t.endsWith('/up') || !s) return;
+  let m; try { m = JSON.parse(s); } catch (e) { return; }
+  if (!m || !m.c) return;
+  if (m.t === 'hello') {
+    let h; try { h = await CR.open(MP.rk, m.d); } catch (e) { return; }
+    const name = String(h.name || '').replace(/\s+/g, ' ').trim().slice(0, 18) || 'Spieler';
+    let p = MP.players.find(x => x.cid === m.c);
+    if (!p) {
+      const same = MP.players.find(x => !x.local && x.name.toLowerCase() === name.toLowerCase());
+      if (MP.pub.ph === 'lobby') {
+        if (same && !same.conn) { p = same; p.cid = m.c; }
+        else if (MP.players.length >= 24) { return rejectJoin(m.c, h.pub, 'Der Raum ist voll.'); }
+        else { let nm = name, k = 2; while (MP.players.some(x => x.name.toLowerCase() === nm.toLowerCase())) nm = name.slice(0, 15) + ' ' + k++; p = {id: 0, cid: m.c, name: nm, conn: true}; MP.players.push(p); }
+      } else {
+        if (same) { p = same; p.cid = m.c; } else return rejectJoin(m.c, h.pub, 'Das Spiel läuft bereits. Tritt mit genau deinem Namen von vorhin bei, um zurückzukehren.');
+      }
+    }
+    p.key = await CR.shared(MP.kp, h.pub); p.conn = true; p.last = Date.now();
+    sendPriv(p); sendPub();
+    if (MP.pub.ph === 'lobby') hostLobbyRefresh();
+    return;
+  }
+  const p = MP.players.find(x => x.cid === m.c); if (!p || !p.key) return;
+  let d; try { d = await CR.open(p.key, m.d); } catch (e) { return; }
+  p.last = Date.now(); if (!p.conn) { p.conn = true; sendPub(); if (MP.pub.ph === 'lobby') hostLobbyRefresh(); }
+  hostInput(p, d);
+}
+async function rejectJoin(cid, pub, msg) { try { const k = await CR.shared(MP.kp, pub); MP.mq.pub(TP + MP.code + '/p/' + cid, await CR.seal(k, {v: 1e12, err: msg})); } catch (e) {} }
+
+function hostInput(p, d) {
+  if (d.t === 'ans') { if (p.pending && p.pending.rid === d.rid) { const r = p.pending.res; p.pending = null; r(d.val); } }
+  else if (d.t === 'sel') { if (MP.hunt && p.view && p.view.rid === d.rid && p.view.hunt) MP.hunt.onSel(p, d.val); }
+  else if (d.t === 'bye') { p.conn = false; p.last = 0; sendPub(); if (MP.pub.ph === 'lobby') { MP.players = MP.players.filter(x => x !== p); hostLobbyRefresh(); } }
+}
+
+/* Öffentlicher Zustand an alle */
+let pubTimer = null;
+function sendPub() {
+  if (!MP.host || pubTimer) return;
+  pubTimer = setTimeout(async () => {
+    pubTimer = null;
+    MP.pub.code = MP.code; MP.pub.t = Date.now();
+    MP.pub.players = MP.players.map(p => ({id: p.id, n: p.name, a: p.alive !== false, c: !!p.conn, cap: G && G.captain === p.id, d: G && G.deppOut && G.deppOut.includes(p.id)}));
+    const snap = JSON.parse(JSON.stringify(MP.pub));
+    try { MP.mq.pub(TP + MP.code + '/pub', await CR.seal(MP.rk, snap)); } catch (e) {}
+    CL.onPub(snap);
+  }, TEST ? 0 : 40);
+}
+/* Privater Bildschirm an einen Spieler */
+async function sendPriv(p) {
+  const msg = {v: ++MP.seq, view: p.view || null, me: meInfo(p)};
+  if (p.local) { CL.onPriv(JSON.parse(JSON.stringify(msg))); return; }
+  if (!p.key) return;
+  try { MP.mq.pub(TP + MP.code + '/p/' + p.cid, await CR.seal(p.key, msg)); } catch (e) {}
+}
+function meInfo(p) {
+  if (!G || !G.mp || !p.role) return {name: p.name};
+  const R = ROLES[p.role], t = isWolf(p) ? 'wolf' : R.t;
+  let ex = [];
+  if (isWolf(p)) { const m = G.players.filter(q => q !== p && isWolf(q)); ex.push(m.length ? 'Dein Rudel: ' + m.map(q => esc(q.name) + (q.alive ? '' : ' †')).join(', ') : 'Du jagst allein.'); }
+  if (p.role === 'schwestern' || p.role === 'brueder') ex.push('Deine Geschwister: ' + G.players.filter(q => q !== p && q.role === p.role).map(q => esc(q.name)).join(', '));
+  if (G.lovers.includes(p.id)) ex.push('💘 Verliebt in ' + esc(byId(G.lovers.find(x => x !== p.id)).name));
+  if (p.role === 'wildeskind') ex.push(G.model != null ? 'Vorbild: ' + esc(byId(G.model).name) + (G.wildTurned ? ' † – du bist jetzt ein Werwolf!' : '') : 'Dein Vorbild wählst du in der ersten Nacht.');
+  if (p.role === 'hexe') ex.push(`Heiltrank: ${G.potHeal ? 'voll' : 'leer'} · Gifttrank: ${G.potPoison ? 'voll' : 'leer'}`);
+  if (p.role === 'fuchs' && !G.foxOn) ex.push('Deine Nase ist verloren.');
+  if (G.deppOut.includes(p.id)) ex.push('Du darfst nicht mehr abstimmen.');
+  const ghost = !p.alive && S.ghost ? G.players.map(q => ({n: q.name, r: roleName(q), i: ROLES[q.role].i, a: q.alive, l: G.lovers.includes(q.id)})) : null;
+  return {name: p.name, id: p.id, role: p.role, team: t, extra: ex.join('<br>'), alive: p.alive, ghost};
+}
+function view(p, v) { p.view = v; sendPriv(p); }
+function ask(p, v) { return new Promise(res => { const rid = ++MP.rid; p.pending = {rid, res}; view(p, Object.assign({}, v, {rid})); }); }
+const WAITV = (icon = '🌙', title = 'Die Nacht ist noch nicht vorbei…', sub = 'Halte dein Handy weiter in der Hand, damit niemand etwas merkt.') => ({v: 'wait', icon, title, sub});
+function stage(s) { MP.pub.stage = s; sendPub(); }
+function fx(k) { MP.pub.fx = {k, n: ++MP.fx}; sendPub(); }
+function skyMP(m) { MP.pub.sky = m; setSky(m); sendPub(); }
+function clearViews() { MP.players.forEach(p => { p.pending = null; view(p, null); }); }
+function pendingCount() { return MP.players.filter(p => p.pending).length + (MP.hunt && !MP.hunt.done ? 0 : 0); }
+function autoAnswer(p) {
+  const v = p.view; if (!p.pending || !v) return; let val = true;
+  if (v.v === 'pick') { if (v.skip) val = null; else { const c = shuffle(v.cands).slice(0, v.n || 1).map(c => c.id); val = (v.n || 1) === 1 ? c[0] : c; } }
+  else if (v.v === 'choice') val = v.options[v.options.length - 1].value;
+  hostInput(p, {t: 'ans', rid: p.pending.rid, val});
+}
+
+/* ---------- Lobby des Spielleiters ---------- */
+function lobbyListHTML() {
+  const n = MP.players.length;
+  return `<h3>👥 Mitspieler <span class="mute small" style="margin-left:auto">${n}</span></h3>
+    ${n ? `<ul class="plist">${MP.players.map((p, i) => `<li><span class="cdot ${p.conn ? 'on' : ''}"></span><span class="nm">${esc(p.name)}${p.local ? ' <span class="mute small">(du)</span>' : ''}</span><button class="ib" data-up="${i}">‹</button><button class="ib" data-dn="${i}">›</button>${p.local ? '' : `<button class="ib" data-rm="${i}">✕</button>`}</li>`).join('')}</ul>
+    <p class="small mute" style="margin:8px 2px 0">Sortiert die Liste im Uhrzeigersinn, so wie ihr sitzt (wichtig für Fuchs, Bär und Ritter).</p>` : '<p class="mute small">Noch niemand da. Lass die anderen den QR-Code scannen.</p>'}`;
+}
+function hostLobbyRefresh() {
+  if (MP.pub.ph !== 'lobby' || !$('#lobbyList')) return;
+  const ae = document.activeElement;
+  if (ae && ae.id === 'hname') { $('#lobbyList').innerHTML = lobbyListHTML(); bindLobbyList(); startState(); return; }
+  const y = window.scrollY; hostLobby(); window.scrollTo(0, y);
+}
+function startState() {
+  const n = MP.players.length, ok = n >= 4 && S.wolves >= 1 && cardCount() <= n && (!S.mpPlay || (S.hostName || '').trim());
+  const b = $('#mpstart'); if (b) b.disabled = !ok;
+  const w = $('#startwhy'); if (w) w.textContent = n < 4 ? `Noch ${4 - n} Spieler bis zum Start` : (S.mpPlay && !(S.hostName || '').trim()) ? 'Gib oben deinen Namen ein' : cardCount() > n ? 'Zu viele Rollen ausgewählt' : `${n} Spieler bereit`;
+}
+function bindLobbyList() {
+  const L = MP.players, re = () => { hostLobbyRefresh(); sendPub(); };
+  app.querySelectorAll('#lobbyList [data-up]').forEach(b => b.onclick = () => { const i = +b.dataset.up; if (i > 0) { [L[i - 1], L[i]] = [L[i], L[i - 1]]; re(); } });
+  app.querySelectorAll('#lobbyList [data-dn]').forEach(b => b.onclick = () => { const i = +b.dataset.dn; if (i < L.length - 1) { [L[i + 1], L[i]] = [L[i], L[i + 1]]; re(); } });
+  app.querySelectorAll('#lobbyList [data-rm]').forEach(b => b.onclick = () => { const p = L[+b.dataset.rm]; if (confirm(p.name + ' entfernen?')) { MP.players = L.filter(x => x !== p); if (p.key) CR.seal(p.key, {v: 1e12, err: 'Du wurdest vom Spielleiter entfernt.'}).then(s => MP.mq.pub(TP + MP.code + '/p/' + p.cid, s)); re(); } });
+}
+function hostLobby() {
+  document.body.classList.remove('ingame'); MP.pub.ph = 'lobby'; setSky('night');
+  const n = MP.players.length, link = joinLink();
+  render(`
+  <div class="row" style="justify-content:space-between"><button class="btn sm ghost" id="close">✕ Raum schließen</button><span class="kicker">Spielleiter <span class="cdot ${MP.netOk ? 'on' : ''}" id="netdot"></span></span></div>
+  <div class="card center"><div class="kicker">Raum-Code</div>
+    <div class="roomcode">${MP.code.split('').map(c => `<span>${c}</span>`).join('')}</div>
+    <div class="qr">${qrSVG(link)}</div>
+    <p class="small mute">Scannt den QR-Code mit der Kamera oder öffnet die Werwolf-App und gebt den Code ein.</p>
+    <button class="btn sm" id="share">🔗 Einladungslink teilen</button></div>
+  <div class="card"><h3>🧙 Spielleiter</h3>
+    <div class="tog" id="t_play"><div class="sw ${S.mpPlay ? 'on' : ''}"></div><span>Ich spiele selbst mit</span></div>
+    ${S.mpPlay ? `<input type="text" id="hname" placeholder="Dein Name" maxlength="18" value="${esc(S.hostName || '')}" style="margin-top:10px">` : '<p class="small mute" style="margin-top:8px">Du bist nur Erzähler. Dein Handy zeigt das Geschehen und darf alle Rollen sehen.</p>'}
+    <p class="small mute" style="margin-top:8px">Dieses Handy ist der Erzähler: Lautstärke hoch und in die Mitte legen. ${S.mpPlay ? 'Deine eigenen Züge machst du trotzdem hier, das fällt nicht auf, weil alle gleichzeitig tippen.' : ''}</p></div>
+  <div class="card" id="lobbyList">${lobbyListHTML()}</div>
+  ${rolesSection(Math.max(n, 4))}
+  ${settingsSection(true)}
+  <p class="foot"><a href="#" id="rules">📖 Regeln & alle Rollen</a></p>
+  <div class="sticky"><div class="in"><button class="btn primary wide" id="mpstart" style="min-height:58px;font-size:1.1rem">🌕 Spiel starten</button><div class="center small mute" id="startwhy" style="margin-top:6px"></div></div></div>`);
+  $('#close').onclick = () => { if (confirm('Raum schließen? Alle Spieler werden getrennt.')) mpLeave(); };
+  $('#share').onclick = async () => { try { if (navigator.share) await navigator.share({title: 'Werwolf – Düsterwald', text: 'Komm in mein Werwolf-Spiel! Code: ' + MP.code, url: link}); else { await navigator.clipboard.writeText(link); $('#share').textContent = '✅ Link kopiert'; } } catch (e) {} };
+  $('#t_play').onclick = () => { S.mpPlay = !S.mpPlay; saveS(); if (S.mpPlay) addHostPlayer(); else removeHostPlayer(); sendPub(); hostLobbyRefresh(); };
+  if ($('#hname')) $('#hname').oninput = e => { S.hostName = e.target.value; saveS(); if (MP.me) { MP.me.name = (S.hostName || 'Spielleiter').trim().slice(0, 18) || 'Spielleiter'; } startState(); sendPub(); };
+  if ($('#hname')) $('#hname').onblur = () => hostLobbyRefresh();
+  bindLobbyList();
+  const rer = () => { hostLobbyRefresh(); };
+  bindRoles(Math.max(n, 4), rer); bindSettings(rer);
+  $('#rules').onclick = e => { e.preventDefault(); rulesOv(false); };
+  $('#mpstart').onclick = () => mpStartGame();
+  startState(); sendPub();
+}
+function netDot() { const d = $('#netdot') || $('#mpnet'); if (d) d.classList.toggle('on', MP.netOk); }
+
+/* =========================================================
+   SPIELABLAUF (läuft nur auf dem Handy des Spielleiters)
+   ========================================================= */
+async function mpStartGame() {
+  A.init(); A.resume(); A.volume();
+  if (!TEST && 'speechSynthesis' in window) { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {} }
+  keepAwake();
+  const L = MP.players; L.forEach((p, i) => { p.id = i; });
+  const deck = buildDeck(L.length), roles = shuffle(deck);
+  G = { mp: true, running: true, round: 0, phase: 'setup', deck, log: [], players: L,
+    lovers: [], model: null, wildTurned: false, potHeal: true, potPoison: true, lastProtect: null, foxOn: true,
+    raven: null, captain: null, captainDone: false, elderHit: false, knightCurse: false, knightSeat: -1, deppOut: [], winner: null, girlCaught: null };
+  L.forEach((p, i) => Object.assign(p, {role: roles[i], alive: true, cause: null, pending: null, view: null}));
+  MP.pub = {ph: 'game', code: MP.code, round: 0, sky: 'night', stage: null, cap: '', timer: null, ready: null, end: null};
+  document.body.classList.add('ingame');
+  window.onbeforeunload = () => G && G.running ? 'Spiel läuft' : undefined;
+  skyMP('night'); A.scene('night');
+  stage({icon: '🃏', kicker: 'Vorbereitung', title: 'Schaut euch eure Rolle an', sub: 'Haltet eure Karte gedrückt. Niemand sonst darf mitlesen.'});
+  const sp = say(line('roles_mp'));
+  await Promise.all(L.map(p => ask(p, {v: 'role', title: 'Deine Rolle', btn: 'Verstanden'}).then(() => view(p, WAITV('🌕', 'Bereit', 'Warte, bis alle ihre Rolle kennen…')))));
+  await sp;
+  clearViews();
+  stage({icon: '🐺', kicker: 'Die Geschichte beginnt', title: 'Düsterwald', sub: 'Hört dem Erzähler zu…'});
+  A.howl(.7); await say(line('intro'));
+  try {
+    while (!G.winner) {
+      await mpNight(); if (G.winner) break;
+      await mpMorning(); if (G.winner) break;
+      await mpDay();
+    }
+  } catch (e) { console.error(e); if (e === 'abort') return; }
+  await mpEnd();
+}
+
+/* Eine Nacht-Phase: ALLE Lebenden bekommen gleichzeitig eine Aufgabe.
+   Wer fertig ist, sieht denselben Wartebildschirm. Die Phase dauert immer mindestens
+   ein paar zufällige Sekunden, damit Schnelle/Langsame nichts verraten. */
+async function mpPhase(minMs, fn) {
+  const L = alive(), t0 = Date.now();
+  await Promise.all(L.map(async p => { await fn(p); p.pending = null; view(p, WAITV()); }));
+  const rest = (TEST ? 0 : minMs) - (Date.now() - t0); if (rest > 0) await sleep(rest);
+}
+
+async function mpNight() {
+  G.round++; G.phase = 'night'; MP.pub.round = G.round;
+  G.n = {victim: null, heal: false, poison: null, protect: null, white: null}; G.sus = {}; G.trust = {}; G.girlCaught = null;
+  skyMP('night'); A.scene('night'); clearViews();
+  stage({icon: '🌙', kicker: 'Die Nacht bricht herein', title: 'Nacht ' + G.round, sub: 'Nehmt eure Handys und haltet sie so, dass niemand mitlesen kann.'});
+  await say(line('night_mp'));
+  const first = G.round === 1;
+  const prey = alive().filter(p => !isWolf(p)), wolves = pack();
+  MP.hunt = prey.length && wolves.length ? makeHunt(wolves, prey) : null;
+  stage({icon: '🌘', kicker: 'Nacht ' + G.round, title: 'Alle handeln gleichzeitig', sub: 'Jeder hat jetzt eine geheime Aufgabe auf seinem Handy.'});
+  const sp1 = say(line('mp_phase1'));
+  setTimeout(() => A.howl(.35, 280), 2500);
+  await mpPhase(rnd(16000, 23000), p => mpTask1(p, first));
+  MP.hunt = null; await sp1;
+  stage({icon: '🌗', kicker: 'Nacht ' + G.round, title: 'Die Nacht ist noch nicht vorbei…', sub: 'Eine zweite Aufgabe wartet auf jeden.'});
+  const sp2 = say(line('mp_phase2'));
+  await mpPhase(rnd(9000, 14000), p => mpTask2(p, first));
+  await sp2;
+  clearViews();
+  stage({icon: '🌑', kicker: 'Nacht ' + G.round, title: 'Ruhe kehrt ein', sub: 'Legt die Handys mit dem Bildschirm nach unten ab.'});
+  await say(line('mp_night_end'));
+}
+
+/* Werwolf-Rudel: alle Wölfe sehen live, wen die anderen antippen. Sind sich alle einig, ist die Beute fix. */
+function makeHunt(wolves, prey) {
+  const H = {sel: {}, done: false, victim: null}; let resF; H.promise = new Promise(r => resF = r); let lockT = null;
+  const nm = id => byId(id).name;
+  const tags = () => { const t = {}; wolves.forEach(w => { const s = H.sel[w.id]; if (s != null) (t[s] = t[s] || []).push(w.name); }); const o = {}; for (const k in t) o[k] = '🐺 ' + t[k].join(', '); return o; };
+  const same = () => { const v = wolves.map(w => H.sel[w.id]); return v.every(x => x != null && x === v[0]) ? v[0] : null; };
+  const status = () => {
+    if (H.done) return `🩸 Entschieden: <b>${esc(nm(H.victim))}</b>`;
+    const s = same(); if (s != null) return wolves.length > 1 ? `Einig! <b>${esc(nm(s))}</b> wird eure Beute…` : `<b>${esc(nm(s))}</b> wird deine Beute…`;
+    return wolves.length > 1 ? 'Tippt alle auf dasselbe Opfer. Ihr seht live, wen die anderen wählen.' : 'Tippe auf dein Opfer.';
+  };
+  H.refresh = () => wolves.forEach(w => { if (w.view && w.view.hunt) view(w, Object.assign({}, w.view, {tags: tags(), status: status(), locked: H.done})); });
+  const finish = v => { if (H.done) return; H.done = true; H.victim = v; G.n.victim = v; clearTimeout(lockT); clearTimeout(H.to); H.refresh(); log(`Die Werwölfe (${wolves.map(w => w.name).join(', ')}) wählen ${nm(v)}.`); resF(v); };
+  H.onSel = (w, v) => { if (H.done || !prey.some(p => p.id === v)) return; H.sel[w.id] = v; clearTimeout(lockT); const s = same(); if (s != null) lockT = setTimeout(() => finish(s), TEST ? 5 : 2500); H.refresh(); };
+  H.force = () => { const c = {}; Object.values(H.sel).forEach(v => c[v] = (c[v] || 0) + 1); const mx = Math.max(0, ...Object.values(c)); const top = Object.keys(c).filter(k => c[k] === mx).map(Number); finish(top.length ? any(top) : any(prey).id); };
+  H.to = setTimeout(H.force, TEST && !/longhunt/.test(location.search) ? 300 : 90000);
+  H.join = w => {
+    const mates = wolves.filter(x => x !== w).map(x => esc(x.name));
+    let sub = mates.length ? `Dein Rudel: ${mates.join(', ')}` : 'Du jagst allein.';
+    if (w.role === 'wildeskind') sub = '🐺 Dein Vorbild ist tot – du bist jetzt ein Werwolf! ' + sub;
+    view(w, {v: 'pick', hunt: true, live: true, rid: ++MP.rid, icon: '🐺', kicker: 'Werwölfe · Nacht ' + G.round, title: 'Wer wird gefressen?', sub, cls: 'wolf',
+      cands: prey.map(p => ({id: p.id, name: p.name})), tags: tags(), status: status() + ' <span class="mute">(max. 90 Sek.)</span>'});
+    return H.promise;
+  };
+  return H;
+}
+
+const candsOf = (L) => L.map(p => ({id: p.id, name: p.name}));
+async function suspicion(p) {
+  const id = await ask(p, {v: 'pick', icon: '👁️', kicker: 'Dein geheimer Verdacht', title: 'Wen verdächtigst du am meisten?', sub: 'Am Morgen erfährt das Dorf, wen alle insgeheim verdächtigen. Niemand sieht, was du gewählt hast.', cands: candsOf(alive().filter(q => q !== p)), skip: 'Keine Ahnung', ok: 'Verdacht abgeben'});
+  if (id != null) G.sus[id] = (G.sus[id] || 0) + 1;
+}
+async function mpTask1(p, first) {
+  const R = ROLES[p.role];
+  if (isWolf(p)) {
+    if (MP.hunt) {
+      const v = await MP.hunt.join(p);
+      await ask(p, {v: 'info', icon: '🩸', kicker: 'Werwölfe', title: `${esc(byId(v).name)} ist eure Beute`, html: '<p class="mute">Tu einfach weiter so, als würdest du tippen.</p>', btn: 'Verstanden'});
+    }
+    if (p.role === 'weisserwolf' && (G.round % 2 === 0 || alive().every(isWolf))) {
+      const c = pack().filter(q => q !== p);
+      if (c.length) { const id = await ask(p, {v: 'pick', icon: '🤍', kicker: 'Weißer Werwolf', title: 'Welchen Werwolf zerfleischst du?', sub: 'Heimlich – das Rudel merkt nichts.', cands: candsOf(c), skip: 'Heute niemanden', ok: 'Zerfleischen', cls: 'wolf'}); if (id != null) { G.n.white = id; log(`Der weiße Werwolf (${p.name}) tötet ${byId(id).name}.`); } }
+    }
+    if (!MP.hunt && p.role !== 'weisserwolf') await suspicion(p);
+    return;
+  }
+  const K = R.n;
+  if (p.role === 'amor' && first) {
+    const ids = await ask(p, {v: 'pick', icon: '💘', kicker: 'Amor', title: 'Wen verliebst du?', sub: 'Tippe genau zwei Spieler an (du darfst dich selbst wählen). Die beiden erfahren es gleich geheim auf ihrem Handy.', cands: candsOf(alive()), n: 2, ok: 'Pfeile abschießen'});
+    G.lovers = ids; log(`Amor (${p.name}) verliebt ${ids.map(i => byId(i).name).join(' und ')}.`);
+  } else if (p.role === 'wildeskind' && first) {
+    G.model = await ask(p, {v: 'pick', icon: '🧒', kicker: 'Wildes Kind', title: 'Wähle dein Vorbild', sub: 'Stirbt es, wirst du zum Werwolf.', cands: candsOf(alive().filter(q => q !== p))});
+    log(`Das wilde Kind (${p.name}) wählt ${byId(G.model).name} als Vorbild.`);
+  } else if (p.role === 'beschuetzer') {
+    const id = await ask(p, {v: 'pick', icon: '🛡️', kicker: 'Beschützer', title: 'Wen beschützt du heute Nacht?', sub: G.lastProtect != null ? `${esc(byId(G.lastProtect).name)} darfst du nicht nochmal wählen.` : 'Du darfst auch dich selbst schützen.', cands: candsOf(alive().filter(q => q.id !== G.lastProtect))});
+    G.n.protect = id; G.lastProtect = id; log(`Der Beschützer (${p.name}) bewacht ${byId(id).name}.`);
+  } else if (p.role === 'seherin') {
+    const id = await ask(p, {v: 'pick', icon: '🔮', kicker: 'Seherin', title: 'Wessen Seele willst du erblicken?', cands: candsOf(alive().filter(q => q !== p))});
+    const t = byId(id); log(`Die Seherin (${p.name}) sieht: ${t.name} ist ${roleName(t)}.`);
+    await ask(p, {v: 'info', icon: ROLES[t.role].i, kicker: 'Die Kugel zeigt', title: `${esc(t.name)} ist…`, html: `<div class="tomb"><div class="rn">${roleName(t)}</div><div class="small mute">${isWolf(t) ? '🐺 Gehört zu den Werwölfen' : 'Kein Werwolf'}</div></div>`, btn: 'Gesehen'});
+  } else if (p.role === 'fuchs' && G.foxOn) {
+    const id = await ask(p, {v: 'pick', icon: '🦊', kicker: 'Fuchs', title: 'Wen beschnupperst du?', sub: 'Ich prüfe ihn und seine beiden Sitznachbarn.', cands: candsOf(alive())});
+    const t = byId(id), grp = [t, ...neighbors(t)], hit = grp.some(isWolf); if (!hit) G.foxOn = false;
+    log(`Der Fuchs (${p.name}) beschnuppert ${grp.map(q => q.name).join(', ')}: ${hit ? 'Werwolf dabei' : 'kein Werwolf, Nase verloren'}.`);
+    await ask(p, {v: 'info', icon: hit ? '🐺' : '🌿', kicker: 'Deine Nase sagt', title: hit ? 'Hier riecht es nach Wolf!' : 'Nichts gerochen…', html: `<p class="mute">Geprüft: ${grp.map(q => esc(q.name)).join(', ')}</p>${hit ? '' : '<p class="warn">Deine Nase ist verloren.</p>'}`, btn: 'Gesehen'});
+  } else if (p.role === 'rabe') {
+    const id = await ask(p, {v: 'pick', icon: '🐦‍⬛', kicker: 'Rabe', title: 'Wen verfluchst du?', sub: 'Er startet die nächste Abstimmung mit +2 Stimmen gegen sich.', cands: candsOf(alive().filter(q => q !== p)), skip: 'Niemanden'});
+    G.raven = id; if (id != null) log(`Der Rabe (${p.name}) markiert ${byId(id).name}.`);
+  } else if (p.role === 'maedchen') {
+    const peek = await ask(p, {v: 'choice', icon: '👧', kicker: 'Kleines Mädchen', title: 'Willst du heimlich blinzeln?', html: '<p class="mute">Vielleicht erkennst du einen Werwolf… aber vielleicht erwischen sie dich dabei.</p>', options: [{label: '👀 Blinzeln', value: true, cls: 'primary'}, {label: 'Augen zu lassen', value: false, cls: 'ghost'}]});
+    if (peek) {
+      const W = pack(), r = Math.random(), caught = Math.random() < .2;
+      const seen = W.length && r < .45 ? any(W) : null;
+      if (caught) G.girlCaught = p.id;
+      log(`Das kleine Mädchen (${p.name}) blinzelt${seen ? ' und erkennt ' + seen.name : ''}${caught ? ' – und wird erwischt' : ''}.`);
+      await ask(p, {v: 'info', icon: seen ? '🐺' : '🌫️', kicker: 'Du blinzelst…', title: seen ? `${esc(seen.name)} ist ein Werwolf!` : 'Du erkennst nur Schatten…', html: '<p class="mute">Schnell wieder die Augen zu!</p>', btn: 'Augen zu'});
+    }
+  }
+  await suspicion(p);
+}
+async function mpTask2(p, first) {
+  if (p.role === 'hexe') return witchMP(p);
+  if (first && G.lovers.includes(p.id)) {
+    const o = byId(G.lovers.find(x => x !== p.id));
+    await ask(p, {v: 'info', icon: '💞', kicker: 'Geheime Botschaft', title: 'Du bist verliebt!', html: `<div class="tomb"><div class="small mute">Dein Herz gehört</div><div class="rn">${esc(o.name)}</div></div><p class="mute small">Stirbt einer von euch, stirbt der andere vor Kummer. Bleibt am Ende nur ihr zwei übrig, gewinnt ihr gemeinsam, auch gegen euer eigenes Team.</p>`, btn: 'Gelesen'});
+  }
+  if (isWolf(p) && G.girlCaught != null && byId(G.girlCaught).alive) {
+    await ask(p, {v: 'info', icon: '👧', kicker: 'Werwölfe', title: 'Erwischt!', html: `<p class="mute">Ihr habt <b>${esc(byId(G.girlCaught).name)}</b> beim Blinzeln erwischt. Das ist das kleine Mädchen.</p>`, btn: 'Gemerkt'});
+  }
+  const id = await ask(p, {v: 'pick', icon: '🕯️', kicker: 'Deine geheime Stimme', title: 'Wem vertraust du am meisten?', sub: 'Auch das erfährt das Dorf am Morgen – ohne Namen der Wähler.', cands: candsOf(alive().filter(q => q !== p)), skip: 'Niemandem', ok: 'Vertrauen schenken'});
+  if (id != null) G.trust[id] = (G.trust[id] || 0) + 1;
+}
+async function witchMP(p) {
+  const v = G.n.victim != null ? byId(G.n.victim) : null;
+  if (v && G.potHeal) {
+    const heal = await ask(p, {v: 'choice', icon: '🧪', kicker: 'Hexe', title: v === p ? 'Die Werwölfe haben DICH gewählt!' : `Die Werwölfe haben ${esc(v.name)} gewählt`, html: '<p class="mute">Willst du deinen Heiltrank benutzen? Er wirkt nur ein einziges Mal.</p>', options: [{label: '💚 Ja, retten', value: true, cls: 'primary'}, {label: 'Nein', value: false, cls: 'ghost'}]});
+    if (heal) { G.potHeal = false; G.n.heal = true; log(`Die Hexe (${p.name}) rettet ${v.name}.`); }
+  } else {
+    await ask(p, {v: 'info', icon: '🧪', kicker: 'Hexe', title: v ? (v === p ? 'Die Werwölfe haben DICH gewählt!' : `Die Werwölfe haben ${esc(v.name)} gewählt`) : 'Die Werwölfe haben niemanden gewählt', html: v ? '<p class="mute">Dein Heiltrank ist leider aufgebraucht.</p>' : '', btn: 'Weiter'});
+  }
+  if (G.potPoison) {
+    const id = await ask(p, {v: 'pick', icon: '☠️', kicker: 'Hexe', title: 'Willst du jemanden vergiften?', sub: 'Der Gifttrank wirkt nur ein einziges Mal.', cands: candsOf(alive()), skip: 'Kein Gift', ok: 'Vergiften', cls: 'wolf'});
+    if (id != null) { G.potPoison = false; G.n.poison = id; log(`Die Hexe (${p.name}) vergiftet ${byId(id).name}.`); }
+  }
+}
+
+/* ---------- Morgen ---------- */
+async function mpMorning() {
+  G.phase = 'morning'; skyMP('day'); A.scene('day'); A.bell(3); clearViews();
+  stage({icon: '🌅', kicker: 'Der Morgen graut', title: 'Tag ' + G.round, sub: 'Öffnet eure Augen.'});
+  await say(line('dawn'));
+  const deaths = [], add = (p, cause) => { if (p && p.alive && !deaths.some(d => d.p === p)) deaths.push({p, cause}); };
+  if (G.knightCurse) { G.knightCurse = false; add(nextWolfFrom(G.knightSeat), 'knight'); }
+  const v = G.n.victim != null ? byId(G.n.victim) : null;
+  if (v && v.alive) {
+    if (G.n.protect === v.id) log(`${v.name} wurde vom Beschützer gerettet.`);
+    else if (G.n.heal) {}
+    else if (v.role === 'aeltester' && !G.elderHit) { G.elderHit = true; log(`${v.name} (Dorfältester) überlebt den Angriff.`); }
+    else { add(v, 'wolf'); if (v.role === 'ritter') { G.knightCurse = true; G.knightSeat = G.players.indexOf(v); } }
+  }
+  if (G.n.white != null) add(byId(G.n.white), 'white');
+  if (G.n.poison != null) add(byId(G.n.poison), 'poison');
+  if (!deaths.length) { A.chime(); stage({icon: '🕊️', kicker: 'Tag ' + G.round, title: 'Niemand ist gestorben', sub: 'Alle haben die Nacht überlebt.'}); await say(line('nobody')); }
+  else {
+    stage({icon: '🩸', kicker: 'Tag ' + G.round, title: deaths.length > 1 ? deaths.length + ' Tote' : 'Ein Toter', sub: 'Die Nacht hat ihren Tribut gefordert.'}); fx('blood');
+    await say(line('some'));
+    await mpKill(shuffle(deaths));
+  }
+  if (checkWin()) return;
+  const b = alive().find(p => p.role === 'baer');
+  if (b) {
+    const hit = neighbors(b).some(isWolf);
+    if (hit) { A.growl(); stage({icon: '🐻', kicker: 'Der Bär', title: 'Der Bär brummt!', sub: `Neben ${esc(b.name)} lauert ein Werwolf.`}); await say(line('bear_yes', {name: b.name})); }
+    else { stage({icon: '🐻', kicker: 'Der Bär', title: 'Der Bär bleibt ruhig', sub: ''}); await say(line('bear_no')); }
+  }
+  // Das Dorf flüstert: Ergebnis der geheimen Verdachts- & Vertrauensumfrage
+  const top = (o) => Object.entries(o).map(([k, n]) => [byId(+k), n]).filter(([p]) => p.alive).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const s = top(G.sus || {}), t = top(G.trust || {});
+  if (s.length) {
+    stage({icon: '🗣️', kicker: 'Das Dorf flüstert…', title: 'Heimliche Stimmen der Nacht',
+      html: `<div class="whisper"><div><div class="kicker">👁️ Verdächtigt</div>${s.map(([p, n]) => `<div class="wrow"><b>${esc(p.name)}</b><span>${n}×</span></div>`).join('')}</div>${t.length ? `<div><div class="kicker">🕯️ Vertraut</div>${t.map(([p, n]) => `<div class="wrow"><b>${esc(p.name)}</b><span>${n}×</span></div>`).join('')}</div>` : ''}</div>`});
+    await say(line('whisper', {name: s[0][0].name}));
+    await sleep(2500);
+  }
+}
+
+async function mpKill(list) {
+  const q = list.slice();
+  while (q.length) {
+    const {p, cause} = q.shift(); if (!p.alive) continue;
+    p.alive = false; p.cause = CAUSE[cause] + ' (' + (G.phase === 'day' ? 'Tag ' : 'Nacht ') + G.round + ')'; p.pending = null;
+    log(`${p.name} stirbt (${CAUSE[cause]}) – war ${roleName(p)}.`);
+    const other = G.lovers.includes(p.id) ? byId(G.lovers.find(x => x !== p.id)) : null;
+    const key = {wolf: 'd_night', poison: 'd_night', white: 'd_night', love: 'd_love', vote: 'd_vote', hunter: 'd_hunter', knight: 'd_knight', scape: 'd_scape'}[cause];
+    const lovedOne = cause === 'love' ? (G.lovers.map(byId).find(x => x !== p) || {}).name : '';
+    A.gong(); fx('blood');
+    stage({icon: S.reveal ? ROLES[p.role].i : '🪦', kicker: '† ' + CAUSE[cause], title: esc(p.name), sub: '', cls: 'dead',
+      html: S.reveal ? `<div class="tomb"><div class="small mute">war</div><div class="rn">${roleName(p)}</div></div>` : '<p class="mute">Die Rolle bleibt ein Geheimnis.</p>'});
+    view(p, null);
+    await say(line(key, {name: p.name, other: lovedOne}));
+    await sleep(2200);
+    if (p.role === 'engel' && G.round === 1) { G.winner = 'engel'; G.angel = p; stage({icon: '😇', kicker: 'Ein Wunder', title: esc(p.name) + ' war der Engel!', sub: 'Er gewinnt allein.'}); await say(line('angel', {name: p.name})); return; }
+    if (other && other.alive) q.unshift({p: other, cause: 'love'});
+    if (G.model === p.id && !G.wildTurned) { const k = G.players.find(x => x.role === 'wildeskind'); if (k && k.alive) { G.wildTurned = true; log(`${k.name} (Wildes Kind) verliert sein Vorbild und wird zum Werwolf.`); sendPriv(k); } }
+    if (p.role === 'jaeger') {
+      A.growl(); stage({icon: '🏹', kicker: 'Letzter Schuss', title: `${esc(p.name)} war der Jäger!`, sub: 'Er hebt mit letzter Kraft sein Gewehr…'});
+      const sp = say(line('hunter', {name: p.name}));
+      const c = alive();
+      if (c.length) { const id = await ask(p, {v: 'pick', icon: '🏹', kicker: 'Letzter Schuss', title: 'Wen nimmst du mit in den Tod?', cands: candsOf(c), ok: 'Schießen', cls: 'wolf'}); p.pending = null; view(p, null); await sp; A.shot(); q.unshift({p: byId(id), cause: 'hunter'}); } else await sp;
+    }
+    if (G.captain === p.id) {
+      G.captain = null; const c = alive().filter(x => !q.some(e => e.p === x));
+      if (c.length) {
+        stage({icon: '🎖️', kicker: 'Nachfolger', title: `${esc(p.name)} ernennt einen Nachfolger`, sub: 'Der Hauptmann wählt auf seinem Handy…'});
+        const sp = say(line('captain_dead', {name: p.name}).replace('Nimm das Handy und wähle.', 'Wähle auf deinem Handy.'));
+        const id = await ask(p, {v: 'pick', icon: '🎖️', kicker: 'Nachfolger', title: 'Wer wird neuer Hauptmann?', cands: candsOf(c)}); p.pending = null; view(p, null);
+        await sp; G.captain = id; log(`${byId(id).name} wird neuer Hauptmann.`); sendPub();
+        stage({icon: '🎖️', kicker: 'Neuer Hauptmann', title: esc(byId(id).name), sub: 'Seine Stimme zählt doppelt.'}); await say(line('captain_set', {name: byId(id).name}));
+      }
+    }
+  }
+  MP.players.forEach(sendPriv);
+}
+
+/* ---------- Tag ---------- */
+async function mpVoteAll(L, opts, weight) {
+  const tally = {}, votes = {}; L.forEach(p => tally[p.id] = 0);
+  let done = 0;
+  await Promise.all(opts.voters.map(async v => {
+    const id = await ask(v, Object.assign({v: 'pick', cands: candsOf(L.filter(p => p !== v))}, opts.view(v)));
+    votes[v.id] = id; if (id != null) tally[id] += weight(v);
+    view(v, WAITV('🗳️', 'Stimme abgegeben', 'Warte auf die anderen…'));
+    done++; if (opts.onProgress) opts.onProgress(done);
+  }));
+  return {tally, votes};
+}
+async function mpDay() {
+  G.phase = 'day'; clearViews();
+  if (S.captain && !G.captainDone) {
+    G.captainDone = true;
+    const L = alive();
+    stage({icon: '🎖️', kicker: 'Hauptmannswahl', title: 'Wer führt das Dorf?', sub: 'Stimmt auf euren Handys ab. Seine Stimme zählt doppelt.'});
+    const sp = say(line('captain_mp'));
+    const {tally} = await mpVoteAll(L, {voters: L, view: () => ({icon: '🎖️', kicker: 'Hauptmannswahl', title: 'Wer soll Hauptmann werden?', skip: 'Enthaltung', ok: 'Wählen'}),
+      onProgress: n => stage({icon: '🎖️', kicker: 'Hauptmannswahl', title: 'Wer führt das Dorf?', sub: `${n} von ${L.length} haben gewählt`})}, () => 1);
+    await sp;
+    const mx = Math.max(...Object.values(tally)); const top = L.filter(p => tally[p.id] === mx);
+    const c = any(top); G.captain = c.id; log(`${c.name} wird Hauptmann.`); A.chime(); clearViews();
+    stage({icon: '🎖️', kicker: 'Hauptmann', title: esc(c.name), sub: top.length > 1 ? 'Bei Gleichstand hat das Los entschieden.' : `${mx} ${mx === 1 ? 'Stimme' : 'Stimmen'}`});
+    await say(line('captain_set', {name: c.name}));
+  }
+  const rv = G.raven != null ? byId(G.raven) : null;
+  if (rv && !rv.alive) G.raven = null;
+  if (G.raven != null) { stage({icon: '🐦‍⬛', kicker: 'Der Rabe', title: 'Der Rabe hat gesprochen', sub: `${esc(rv.name)} startet mit +2 Stimmen.`}); await say(line('raven', {name: rv.name})); }
+  await mpDiscuss();
+  await say(line('vote_mp'));
+  await mpVote();
+  G.raven = null; clearViews();
+}
+function mpDiscuss() {
+  return new Promise(res => {
+    const L = alive(), need = Math.floor(L.length / 2) + 1, ready = new Set();
+    let left = S.discuss * 60, fin = false, iv;
+    const setT = () => { MP.pub.timer = S.discuss ? {id: ++MP.tid, rem: left, total: Math.max(left, S.discuss * 60)} : null; };
+    setT(); MP.pub.ready = {n: 0, of: L.length, need};
+    stage({icon: '🗣️', kicker: 'Tag ' + G.round + ' · Beratung', title: 'Wer ist der Werwolf?', sub: 'Diskutiert! Wer bereit ist, tippt „Bereit zur Abstimmung“.', timer: true});
+    const done = () => { if (fin) return; fin = true; clearInterval(iv); MP.pub.timer = null; MP.pub.ready = null; MP.discuss = null; L.forEach(p => { p.pending = null; view(p, null); }); res(); };
+    MP.discuss = {skip: done, add: () => { left += 60; setT(); sendPub(); }};
+    L.forEach(p => ask(p, {v: 'discuss'}).then(() => {
+      if (fin) return; ready.add(p.id); MP.pub.ready = {n: ready.size, of: L.length, need}; view(p, {v: 'discuss', ready: true}); sendPub();
+      if (ready.size >= need) done();
+    }));
+    say(S.discuss ? line('discuss', {min: S.discuss}) : line('discuss_free'));
+    iv = setInterval(() => {
+      if (!S.discuss || fin) return;
+      left--;
+      if (left === 30) say(line('t30'));
+      if (left <= 10 && left > 0) A.beat(1);
+      if (left <= 0) { A.bell(1, 147); done(); }
+    }, TEST ? 1 : 1000);
+  });
+}
+async function mpVote() {
+  const L = alive(), voters = L.filter(p => !G.deppOut.includes(p.id));
+  L.filter(p => !voters.includes(p)).forEach(p => view(p, WAITV('🤪', 'Du darfst nicht abstimmen', 'Der Dorfdepp hat keine Stimme mehr.')));
+  const capId = G.captain;
+  stage({icon: '⚖️', kicker: 'Das Urteil', title: 'Abstimmung', sub: `0 von ${voters.length} haben abgestimmt`});
+  const {tally, votes} = await mpVoteAll(L, {voters,
+    view: v => ({icon: '⚖️', kicker: 'Abstimmung' + (capId === v.id ? ' · Du bist Hauptmann (2 Stimmen)' : ''), title: 'Wer soll sterben?', skip: 'Enthaltung', ok: 'Stimme abgeben', cls: 'wolf'}),
+    onProgress: n => stage({icon: '⚖️', kicker: 'Das Urteil', title: 'Abstimmung', sub: `${n} von ${voters.length} haben abgestimmt`})},
+    v => capId === v.id ? 2 : 1);
+  if (G.raven != null && tally[G.raven] != null) tally[G.raven] += 2;
+  clearViews();
+  const max = Math.max(...Object.values(tally)), top = max > 0 ? L.filter(p => tally[p.id] === max) : [];
+  const sorted = L.slice().sort((a, b) => tally[b.id] - tally[a.id]);
+  A.beat(3);
+  const who = S.showVotes ? `<div class="vlist">${voters.map(v => `<div><b>${esc(v.name)}</b>${capId === v.id ? ' 🎖️' : ''} → ${votes[v.id] != null ? esc(byId(votes[v.id]).name) : '<span class="mute">Enthaltung</span>'}</div>`).join('')}${G.raven != null ? `<div class="mute">🐦‍⬛ Rabe: +2 auf ${esc(byId(G.raven).name)}</div>` : ''}</div>` : '';
+  stage({icon: '⚖️', kicker: 'Das Urteil', title: 'Die Stimmen', html: `<div class="bars">${sorted.map(p => `<div class="bar ${top.includes(p) ? 'top' : ''}"><i style="width:${max ? tally[p.id] / max * 100 : 0}%"></i><span>${esc(p.name)}</span><span>${tally[p.id]}</span></div>`).join('')}</div>${who}`});
+  log(`Abstimmung: ${sorted.filter(p => tally[p.id]).map(p => p.name + ' ' + tally[p.id]).join(', ') || 'keine Stimmen'}.`);
+  await sleep(S.showVotes ? 7000 : 4500);
+  let target = null, cause = 'vote';
+  if (top.length === 1) target = top[0];
+  else if (top.length > 1) {
+    const sb = alive().find(p => p.role === 'suendenbock');
+    if (sb) { target = sb; cause = 'scape'; }
+    else if (G.captain != null && byId(G.captain).alive) {
+      const c = byId(G.captain);
+      stage({icon: '🎖️', kicker: 'Gleichstand!', title: 'Der Hauptmann entscheidet', sub: `${esc(c.name)} wählt auf seinem Handy…`}); const sp = say(line('tie_cap'));
+      const id = await ask(c, {v: 'pick', icon: '🎖️', kicker: 'Gleichstand – du entscheidest', title: 'Wer stirbt?', cands: candsOf(top), ok: 'Urteil fällen', cls: 'wolf'}); c.pending = null; view(c, null);
+      await sp; target = byId(id);
+    } else { stage({icon: '🤷', kicker: 'Das Urteil', title: 'Gleichstand', sub: 'Heute stirbt niemand.'}); await say(line('tie_none')); log('Gleichstand – niemand stirbt.'); return; }
+  } else { stage({icon: '🤷', kicker: 'Das Urteil', title: 'Keine Stimmen', sub: 'Heute stirbt niemand.'}); await say(line('tie_none')); return; }
+  if (target.role === 'depp' && cause === 'vote' && !G.deppOut.includes(target.id)) {
+    G.deppOut.push(target.id); log(`${target.name} ist der Dorfdepp und überlebt, darf aber nicht mehr abstimmen.`);
+    stage({icon: '🤪', kicker: 'Das Urteil', title: esc(target.name) + ' ist der Dorfdepp!', sub: 'Er überlebt, darf aber nicht mehr abstimmen.'}); sendPriv(target);
+    await say(line('depp', {name: target.name})); return;
+  }
+  await mpKill([{p: target, cause}]);
+  checkWin();
+}
+
+/* ---------- Ende ---------- */
+async function mpEnd() {
+  G.running = false; window.onbeforeunload = null; clearViews();
+  const w = G.winner;
+  const T = {dorf: ['🌄', 'Das Dorf gewinnt!', 'w_dorf'], wolf: ['🐺', 'Die Werwölfe gewinnen!', 'w_wolf'], white: ['🤍', 'Der weiße Werwolf gewinnt!', 'w_white'],
+    lovers: ['💞', 'Das Liebespaar gewinnt!', 'w_lovers'], engel: ['😇', 'Der Engel gewinnt!', null], none: ['👻', 'Niemand gewinnt', 'w_none']}[w];
+  if (w === 'wolf' || w === 'white') { skyMP('night'); A.scene('night'); A.howl(.8); setTimeout(() => A.howl(.6, 340), 1500); }
+  else { skyMP('day'); A.scene('day'); A.bell(5, 220); }
+  MP.pub.ph = 'end'; MP.pub.stage = null; MP.pub.timer = null;
+  MP.pub.end = {w, icon: T[0], title: T[1], rounds: G.round, angel: G.angel ? G.angel.name : null,
+    rows: G.players.map(p => ({n: p.name, i: ROLES[p.role].i, r: roleName(p), a: p.alive, c: p.cause || '', l: G.lovers.includes(p.id), cap: G.captain === p.id})),
+    log: G.log};
+  sendPub(); MP.players.forEach(sendPriv);
+  if (T[2]) await say(line(T[2]));
+  window.__lastWinner = w;
+}
+
+/* =========================================================
+   SPIELER beitreten
+   ========================================================= */
+function mpJoinScreen(code, bIdx) {
+  document.body.classList.remove('ingame');
+  render(`
+  <div class="row" style="justify-content:space-between"><button class="btn sm ghost" id="back">‹ Zurück</button><span class="kicker">Beitreten</span></div>
+  <div class="hero">${LOGO}<h1 style="font-size:1.9rem">Spiel beitreten</h1><p>Düsterwald erwartet dich…</p></div>
+  <div class="card"><div class="set">
+    <div><label>Raum-Code</label><input type="text" id="jcode" maxlength="5" placeholder="z. B. K7QXM" value="${esc(code || '')}" autocapitalize="characters" autocomplete="off" style="text-transform:uppercase;letter-spacing:.3em;font-family:Cinzel,serif;font-size:1.4rem;text-align:center"></div>
+    <div><label>Dein Name</label><input type="text" id="jname" maxlength="18" placeholder="Wie heißt du?" value="${esc(S.myName || '')}" autocomplete="off"></div>
+  </div><div class="acts"><button class="btn primary" id="jgo">🌕 Beitreten</button></div>
+  <p class="small mute center" id="jmsg"></p></div>`);
+  $('#back').onclick = () => { location.hash = ''; home(); };
+  const go = () => {
+    const c = $('#jcode').value.toUpperCase().replace(/[^A-Z0-9]/g, ''), n = $('#jname').value.trim();
+    if (c.length !== 5) { $('#jmsg').textContent = 'Der Code hat 5 Zeichen.'; return; }
+    if (!n) { $('#jmsg').textContent = 'Bitte gib deinen Namen ein.'; $('#jname').focus(); return; }
+    S.myName = n; saveS(); mpJoin(c, n, bIdx);
+  };
+  $('#jgo').onclick = go; $('#jname').onkeydown = e => { if (e.key === 'Enter') go(); };
+  if (!code) $('#jcode').focus(); else if (!S.myName) $('#jname').focus();
+}
+async function mpJoin(code, name, bIdx) {
+  if (!secureOK()) return errScreen('So geht es nicht', FILE_HELP);
+  connScreen('Verbinde…', 'Suche das Spiel ' + esc(code));
+  try {
+    MP.on = true; MP.host = false; MP.code = code; MP.name = name;
+    MP.rk = await CR.room(code); MP.kp = await CR.pair(); MP.myPub = await CR.pub(MP.kp);
+    MP.cid = store.get('cid_' + code, null) || ('p' + Math.random().toString(36).slice(2, 12)); store.set('cid_' + code, MP.cid);
+    const order = BROKERS.slice(); if (bIdx != null && order[bIdx]) order.unshift(order.splice(bIdx, 1)[0]);
+    // Alle Server gleichzeitig verbinden; wo zuerst das Spiel gefunden wird, bleiben wir
+    const conns = []; let anyUp = false;
+    order.forEach(u => {
+      const mq = new MQ(u); conns.push(mq);
+      mq.connect().then(() => {
+        if (MP.mq) { mq.close(); return; }
+        anyUp = true; mq.afterConnect();
+        mq.onmsg = (t, s) => {
+          if (!MP.mq && t === TP + code + '/info' && s) { MP.mq = mq; conns.forEach(c => { if (c !== mq) { c.onmsg = null; c.close(); } }); }
+          if (MP.mq === mq) clientMsg(t, s).catch(e => console.error(e));
+        };
+        mq.sub(TP + code + '/info'); mq.sub(TP + code + '/pub'); mq.sub(TP + code + '/p/' + MP.cid);
+      }, () => { mq.closed = true; });
+    });
+    for (let i = 0; i < 60 && !MP.hostKey; i++) await new Promise(r => setTimeout(r, 200));
+    if (!MP.hostKey) {
+      conns.forEach(c => { c.onmsg = null; c.close(); }); MP.mq = null; MP.on = false;
+      return anyUp ? errScreen('Spiel nicht gefunden', `Unter dem Code <b>${esc(code)}</b> läuft gerade kein Spiel. Prüfe den Code und ob der Spielleiter den Raum offen hat.`, () => mpJoinScreen(code, bIdx))
+                   : errScreen('Keine Verbindung', 'Keiner der Spielserver ist von hier aus erreichbar. ' + NET_HELP, () => mpJoin(code, name, bIdx));
+    }
+    MP.netOk = true;
+    MP.mq.onstate = ok => { MP.netOk = ok; netDot(); if (ok) hello(); };
+    keepAwake();
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && MP.mq) { hello(); keepAwake(); } });
+    window.addEventListener('pagehide', () => { try { CL.send({t: 'bye'}); } catch (e) {} });
+    setInterval(() => { if (MP.mq && MP.hostKey) CL.send({t: 'ping'}); }, 8000);
+    // Bis der Spielleiter antwortet, wiederholt "hallo" sagen
+    const tries = setInterval(() => { if (CL.priv) clearInterval(tries); else hello(); }, 4000);
+  } catch (e) { console.error(e); MP.on = false; errScreen('Keine Verbindung', 'Keiner der Spielserver ist erreichbar. ' + NET_HELP, () => mpJoin(code, name, bIdx)); }
+}
+async function hello() { if (!MP.mq || !MP.hostPub) return; MP.mq.pub(TP + MP.code + '/up', JSON.stringify({c: MP.cid, t: 'hello', d: await CR.seal(MP.rk, {name: MP.name, pub: MP.myPub})})); }
+async function clientMsg(t, s) {
+  const T = TP + MP.code;
+  if (t === T + '/info') {
+    if (!s) { if (MP.hostKey) { MP.ended = true; CL.render(true); } return; }
+    let o; try { o = await CR.open(MP.rk, s); } catch (e) { return; }
+    if (o.hostPub !== MP.hostPub) { MP.hostPub = o.hostPub; MP.hostKey = await CR.shared(MP.kp, o.hostPub); MP.ended = false; CL.seqP = 0; hello(); }
+  } else if (t === T + '/pub') {
+    if (!s) return; let o; try { o = await CR.open(MP.rk, s); } catch (e) { return; } CL.onPub(o);
+  } else if (t === T + '/p/' + MP.cid) {
+    if (!s || !MP.hostKey) return; let o; try { o = await CR.open(MP.hostKey, s); } catch (e) { return; }
+    if (o.err) { MP.err = o.err; CL.render(true); return; }
+    CL.onPriv(o);
+  }
+}
+
+/* =========================================================
+   CLIENT-ANZEIGE (für Spieler und für das Handy des Spielleiters)
+   ========================================================= */
+const CL = { pub: null, priv: null, seqP: 0, sel: {}, sent: {}, key: '', timerId: 0, timerEnd: 0, timerTotal: 1, fxN: 0, lastRid: null, lastPub: 0 };
+CL.send = d => {
+  if (MP.host) { if (MP.me) hostInput(MP.me, d); return; }
+  if (!MP.mq || !MP.hostKey) return;
+  CR.seal(MP.hostKey, d).then(x => MP.mq.pub(TP + MP.code + '/up', JSON.stringify({c: MP.cid, d: x})));
+};
+CL.onPub = p => {
+  const old = CL.pub; CL.pub = p; CL.lastPub = Date.now();
+  if (p.timer) { if (p.timer.id !== CL.timerId) { CL.timerId = p.timer.id; CL.timerEnd = Date.now() + p.timer.rem * 1000; CL.timerTotal = p.timer.total; } } else CL.timerId = 0;
+  if (p.fx && p.fx.n !== CL.fxN) { const first = !CL.fxN; CL.fxN = p.fx.n; if (!first) { flash(); vib([40, 40, 80]); } }
+  if (!MP.host) { caption(p.cap || ''); setSky(p.sky || 'night'); }
+  if (p.ph === 'game' || p.ph === 'end') document.body.classList.add('ingame');
+  CL.render();
+};
+CL.onPriv = d => {
+  if (d.v <= CL.seqP) return; CL.seqP = d.v; CL.priv = d;
+  const v = d.view;
+  if (v && v.rid && v.rid !== CL.lastRid) { CL.lastRid = v.rid; if (CL.pub && CL.pub.sky === 'night') vib(35); }
+  CL.render();
+};
+function stageHTML(s) {
+  if (!s) return `<div class="scr scene"><div class="big">🌙</div><h2>Düsterwald</h2></div>`;
+  return `<div class="scr scene ${s.cls || ''}">${s.kicker ? `<div class="kicker">${s.kicker}</div>` : ''}${s.icon ? `<div class="big">${s.icon}</div>` : ''}<h2>${s.title || ''}</h2>${s.sub ? `<p>${s.sub}</p>` : ''}${s.html || ''}${s.timer ? timerHTML() : ''}</div>`;
+}
+function timerHTML(btn) {
+  const P = CL.pub, R = 110, C = 2 * Math.PI * R;
+  const t = P && P.timer ? `<div class="timer" id="tm"><svg viewBox="0 0 240 240"><circle cx="120" cy="120" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/><circle id="arc" cx="120" cy="120" r="${R}" fill="none" stroke="var(--gold2)" stroke-width="10" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0" style="transition:stroke-dashoffset .5s linear"/></svg><div class="t" id="tt"></div></div>` : '';
+  const r = P && P.ready ? `<p class="center mute small" id="rdy">✋ ${P.ready.n} von ${P.ready.of} bereit · ab ${P.ready.need} wird abgestimmt</p>` : '';
+  return t + r + (btn || '');
+}
+function tickTimer() {
+  const tt = $('#tt'); if (!tt || !CL.timerId) return;
+  const left = Math.max(0, Math.round((CL.timerEnd - Date.now()) / 1000));
+  tt.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  const C = 2 * Math.PI * 110; const a = $('#arc'); if (a) a.style.strokeDashoffset = C * (1 - left / Math.max(CL.timerTotal, left, 1));
+  $('#tm').classList.toggle('low', left <= 10);
+}
+setInterval(() => {
+  tickTimer();
+  if (MP.on && !MP.host && CL.pub && CL.pub.ph !== 'end') {
+    const lost = Date.now() - CL.lastPub > 16000 || !MP.netOk;
+    const b = $('#lostbar'); if (lost && !b) { const d = document.createElement('div'); d.id = 'lostbar'; d.textContent = '⚠️ Verbindung zum Spielleiter unterbrochen… versuche es weiter'; document.body.appendChild(d); } else if (!lost && b) b.remove();
+  }
+}, 500);
+
+function viewHTML(v, me) {
+  const sent = CL.sent[v.rid];
+  if (v.v === 'pick') {
+    const sel = CL.sel[v.rid] || [], tags = v.tags || {};
+    return `<div class="scr pick ${v.cls || ''}">${v.kicker ? `<div class="kicker center">${v.kicker}</div>` : ''}${v.icon ? `<div class="ricon">${v.icon}</div>` : ''}<h2>${v.title}</h2>${v.sub ? `<p class="sub">${v.sub}</p>` : ''}
+      ${v.status ? `<p class="center hstat">${v.status}</p>` : ''}
+      <div class="grid">${v.cands.map(c => `<button class="opt ${sel.includes(c.id) ? 'sel' : ''} ${v.locked || sent ? 'dis' : ''}" data-id="${c.id}">${esc(c.name)}${tags[c.id] ? `<span class="tag wtag">${esc(tags[c.id])}</span>` : ''}</button>`).join('')}</div>
+      ${v.live ? '' : `<div class="acts">${v.skip ? `<button class="btn ghost" id="skip" ${sent ? 'disabled' : ''}>${v.skip}</button>` : ''}<button class="btn primary confirm" id="ok" ${sel.length === (v.n || 1) && !sent ? '' : 'disabled'}>${sent ? '…' : v.ok || 'Bestätigen'}</button></div>`}</div>`;
+  }
+  if (v.v === 'info') return `<div class="scr scene">${v.kicker ? `<div class="kicker">${v.kicker}</div>` : ''}${v.icon ? `<div class="big">${v.icon}</div>` : ''}<h2>${v.title}</h2>${v.html || ''}${v.rid ? `<div class="acts"><button class="btn primary" id="ok" ${sent ? 'disabled' : ''}>${v.btn || 'Weiter'}</button></div>` : ''}</div>`;
+  if (v.v === 'choice') return `<div class="scr scene">${v.kicker ? `<div class="kicker">${v.kicker}</div>` : ''}${v.icon ? `<div class="big">${v.icon}</div>` : ''}<h2>${v.title}</h2>${v.html || ''}<div class="acts" style="flex-direction:column">${v.options.map((o, i) => `<button class="btn ${o.cls || ''}" data-i="${i}" ${sent ? 'disabled' : ''}>${o.label}</button>`).join('')}</div></div>`;
+  if (v.v === 'wait') return `<div class="scr scene waitv"><div class="big">${v.icon || '🌙'}</div><h2>${v.title}</h2><p>${v.sub || ''}</p><div class="dots"><i></i><i></i><i></i></div></div>`;
+  if (v.v === 'role') return `<div class="scr center"><div class="kicker">${esc(me.name)}</div><h2 style="color:var(--gold)">${v.title}</h2>${me.role ? roleCardMe(me) : ''}<div class="acts"><button class="btn primary" id="ok" disabled>${v.btn || 'Verstanden'}</button></div></div>`;
+  if (v.v === 'discuss') { const s = CL.pub.stage || {}; const btn = v.ready ? '<div class="acts"><button class="btn" disabled>✅ Du bist bereit</button></div>' : `<div class="acts"><button class="btn blood" id="ok">✋ Bereit zur Abstimmung</button></div>`;
+    return `<div class="scr scene">${s.kicker ? `<div class="kicker">${s.kicker}</div>` : ''}<h2>${s.title || ''}</h2>${s.sub ? `<p>${s.sub}</p>` : ''}${timerHTML(btn)}</div>`; }
+  return '';
+}
+function roleCardMe(me) {
+  const R = ROLES[me.role];
+  return `<div class="flip" id="flip"><div class="in">
+    <div class="face back">${LOGO}<div class="ht">Gedrückt halten</div><div class="small mute" style="margin-top:6px">Niemand sonst darf hinschauen</div></div>
+    <div class="face front ${me.team}"><div class="ri">${R.i}</div><div class="rn">${R.n}</div><div class="tm ${me.team}">${TEAM[me.team]}</div><div class="rd">${R.d}</div>${me.extra ? `<div class="rx">${me.extra}</div>` : ''}</div></div></div>`;
+}
+function bindFlip(onFirst) {
+  const f = $('#flip'); if (!f) return;
+  const on = e => { e.preventDefault(); f.classList.add('show'); if (!f._s) { f._s = 1; vib(15); onFirst && onFirst(); } };
+  const off = () => f.classList.remove('show');
+  f.addEventListener('pointerdown', on); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => f.addEventListener(ev, off));
+  f.addEventListener('contextmenu', e => e.preventDefault());
+}
+function ghostHTML(me) {
+  if (!me || me.alive !== false) return '';
+  return `<div class="card ghost"><h3>👻 Du bist tot</h3><p class="small mute">Du darfst nichts mehr verraten – kein Wort, kein Grinsen!</p>
+    ${me.ghost ? `<details><summary class="small" style="color:var(--gold)">Geisterblick: alle Rollen ansehen</summary><table class="tbl" style="margin-top:8px">${me.ghost.map(g => `<tr><td>${g.i}</td><td class="${g.a ? '' : 'strike'}">${esc(g.n)}${g.l ? ' 💘' : ''}</td><td class="small mute">${g.r}</td></tr>`).join('')}</table></details>` : ''}</div>`;
+}
+function endHTML(E) {
+  return `<div class="win"><div class="hero"><div class="big" style="font-size:5rem">${E.icon}</div></div><h1>${E.title}</h1>
+    <p class="center mute">Nach ${E.rounds} ${E.rounds === 1 ? 'Nacht' : 'Nächten'}${E.angel ? ` · ${esc(E.angel)} war der Engel` : ''}</p>
+    <div class="card"><h3>🃏 Alle Rollen</h3><table class="tbl">${E.rows.map(p => `<tr><td>${p.i}</td><td><b class="${p.a ? '' : 'strike'}">${esc(p.n)}</b>${p.l ? ' 💘' : ''}${p.cap ? ' 🎖️' : ''}<div class="small mute">${p.r}</div></td><td class="small mute" style="text-align:right">${p.a ? '✅ lebt' : esc(p.c)}</td></tr>`).join('')}</table></div>
+    <details class="card"><summary><h3>📜 Was wirklich geschah</h3></summary><div class="log">${E.log.map(l => `<div><b>${l.at}</b> · ${esc(l.t)}</div>`).join('')}</div></details>
+    ${MP.host ? `<div class="acts" style="flex-direction:column"><button class="btn primary endagain" id="again">🔁 Neue Runde mit allen</button><button class="btn ghost" id="tolobby">Zur Lobby (Rollen ändern)</button></div>` : '<p class="center mute">Warte auf den Spielleiter für die nächste Runde…</p>'}</div>`;
+}
+function playerLobbyHTML(P) {
+  return `<div class="hero">${LOGO}<h1 style="font-size:1.9rem">Du bist dabei!</h1><p>Raum ${esc(P.code || MP.code)}</p></div>
+    <div class="card"><h3>👥 Im Raum <span class="mute small" style="margin-left:auto">${(P.players || []).length}</span></h3>
+      <div class="chips">${(P.players || []).map(p => `<span class="chip"><span class="cdot ${p.c ? 'on' : ''}"></span> ${esc(p.n)}${p.n === MP.name ? ' (du)' : ''}</span>`).join('')}</div></div>
+    <div class="card small"><h3>🕯️ Bevor es losgeht</h3>
+      <p>• Bildschirm-Helligkeit runter, Handy flach in der Hand – niemand darf mitlesen.</p>
+      <p>• Nachts bekommt <b>jeder</b> gleichzeitig eine Aufgabe. Tipp ganz normal – alle tippen, deshalb fällt niemand auf.</p>
+      <p>• Der Erzähler spricht über das Handy des Spielleiters.</p>
+      <p class="center mute" style="margin-top:12px">Warte, bis der Spielleiter das Spiel startet…</p></div>
+    <div class="acts"><button class="btn ghost" id="leave">Raum verlassen</button></div>`;
+}
+CL.render = (force) => {
+  if (MP.err) { render(`<div class="scr scene"><div class="big">🚪</div><h2>Nicht möglich</h2><p>${esc(MP.err)}</p><div class="acts"><button class="btn primary" id="eback">Zum Start</button></div></div>`); $('#eback').onclick = () => { MP.err = null; mpLeave(); }; return; }
+  if (MP.ended && !MP.host) { render(`<div class="scr scene"><div class="big">🌫️</div><h2>Der Raum wurde geschlossen</h2><p>Der Spielleiter hat das Spiel beendet.</p><div class="acts"><button class="btn primary" id="eback">Zum Start</button></div></div>`); $('#eback').onclick = mpLeave; return; }
+  const P = CL.pub; if (!P) return;
+  if (P.ph === 'lobby') {
+    if (MP.host) return;
+    const k = 'L' + JSON.stringify(P.players); if (k === CL.key && !force) return; CL.key = k;
+    document.body.classList.remove('ingame');
+    render(playerLobbyHTML(P)); $('#leave').onclick = () => { CL.send({t: 'bye'}); mpLeave(); }; return;
+  }
+  const me = CL.priv && CL.priv.me, v = CL.priv && CL.priv.view;
+  if (P.ph === 'end' && P.end) {
+    const k = 'E' + JSON.stringify(P.end.rows) + P.end.title; if (k === CL.key && !force) return; CL.key = k;
+    document.body.classList.remove('ingame');
+    render(endHTML(P.end));
+    if (MP.host) { $('#again').onclick = () => mpStartGame(); $('#tolobby').onclick = () => { MP.players.forEach(p => { p.role = null; p.alive = true; p.view = null; p.pending = null; }); G = null; MP.pub = {ph: 'lobby', code: MP.code}; A.scene('none'); hostLobby(); }; }
+    return;
+  }
+  const key = JSON.stringify([P.stage, v, me && me.alive, me && me.extra, me && !!me.ghost, P.ready, CL.sent[v && v.rid]]);
+  if (key === CL.key && !force) return; CL.key = key;
+  const body = v ? viewHTML(v, me || {}) : stageHTML(P.stage);
+  render(body + (v && v.v !== 'role' ? '' : ghostHTML(me)) + (!v ? '' : ''));
+  // Bindings
+  if (!v) { tickTimer(); return; }
+  const rid = v.rid;
+  const ans = val => { if (CL.sent[rid]) return; CL.sent[rid] = true; CL.send({t: 'ans', rid, val}); CL.render(true); };
+  if (v.v === 'pick') {
+    app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      if (v.locked || CL.sent[rid]) return;
+      const id = +b.dataset.id; let sel = CL.sel[rid] || [];
+      if (sel.includes(id) && !v.live) sel = sel.filter(x => x !== id); else { if ((v.n || 1) === 1) sel = []; if (sel.length < (v.n || 1)) sel.push(id); }
+      CL.sel[rid] = sel; vib(8);
+      app.querySelectorAll('.opt').forEach(o => o.classList.toggle('sel', sel.includes(+o.dataset.id)));
+      if (v.live) CL.send({t: 'sel', rid, val: id});
+      const ok = $('#ok'); if (ok) ok.disabled = sel.length !== (v.n || 1);
+    });
+    if ($('#ok')) $('#ok').onclick = () => { const s = CL.sel[rid] || []; ans((v.n || 1) === 1 ? s[0] : s); };
+    if ($('#skip')) $('#skip').onclick = () => ans(null);
+  } else if (v.v === 'info' && rid) $('#ok').onclick = () => ans(true);
+  else if (v.v === 'choice') app.querySelectorAll('[data-i]').forEach(b => b.onclick = () => ans(v.options[+b.dataset.i].value));
+  else if (v.v === 'role') { bindFlip(() => { const ok = $('#ok'); if (ok) ok.disabled = false; }); $('#ok').onclick = () => ans(true); }
+  else if (v.v === 'discuss' && rid && $('#ok')) $('#ok').onclick = () => ans(true);
+  tickTimer();
+};
+
+/* ---------- Menü im Mehrspieler-Modus ---------- */
+function mpMenu() {
+  const me = CL.priv && CL.priv.me, P = CL.pub || {};
+  const waiting = MP.host ? MP.players.filter(p => p.pending).length : 0;
+  openOv(`<div class="hero">${LOGO}<h1 style="font-size:1.6rem">Menü</h1><p>Raum ${esc(MP.code)} <span class="cdot ${MP.netOk ? 'on' : ''}" id="mpnet"></span></p></div>
+    <div class="acts" style="flex-direction:column">
+      ${me && me.role ? '<button class="btn" id="m_role">🃏 Meine Rolle ansehen</button>' : ''}
+      ${MP.host ? `
+        ${MP.discuss ? '<button class="btn blood" id="m_vote">⚖️ Abstimmung jetzt starten</button><button class="btn" id="m_add">⏳ +1 Minute Diskussion</button>' : ''}
+        ${waiting || (MP.hunt && !MP.hunt.done) ? `<button class="btn" id="m_skip">⏩ Nicht mehr warten (${waiting} offen)</button><p class="small mute center" style="margin:-4px 0 4px">Nur nutzen, wenn jemand nicht mehr reagiert. Für ihn wird zufällig gewählt.</p>` : ''}
+        <button class="btn" id="m_snd">${S.soundOn ? '🔊 Atmosphäre an' : '🔇 Atmosphäre aus'}</button>
+        <button class="btn" id="m_voice">${S.voiceOn ? '🗣️ Erzählerstimme an' : '🤐 Erzählerstimme aus'}</button>
+        <div class="card small"><b>Verbindungen</b><div class="chips">${MP.players.map(p => `<span class="chip"><span class="cdot ${p.conn ? 'on' : ''}"></span> ${esc(p.name)}</span>`).join('')}</div></div>
+        ${!S.mpPlay && G ? `<details class="card small"><summary><b>👁️ Spielleiter-Sicht: alle Rollen</b></summary><table class="tbl">${G.players.map(p => `<tr><td>${ROLES[p.role].i}</td><td class="${p.alive ? '' : 'strike'}">${esc(p.name)}</td><td class="mute">${roleName(p)}</td></tr>`).join('')}</table></details>` : ''}
+        <button class="btn blood" id="m_quit">Spiel beenden</button>` : '<button class="btn blood" id="m_leave">Spiel verlassen</button>'}
+      <button class="btn" id="m_rules">📖 Regeln & Rollen</button>
+      <button class="btn primary" id="m_close">Zurück zum Spiel</button></div>`);
+  const b = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  b('#m_close', closeOv);
+  b('#m_rules', () => rulesOv(true));
+  b('#m_role', () => {
+    openOv(`<div class="center"><div class="kicker">${esc(me.name)}</div><h2 style="color:var(--gold)">Deine Rolle</h2>${roleCardMe(me)}<div class="acts"><button class="btn primary" id="done">Fertig</button></div></div>`);
+    const f = ovc.querySelector('#flip'); const on = e => { e.preventDefault(); f.classList.add('show'); }, off = () => f.classList.remove('show');
+    f.addEventListener('pointerdown', on); ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => f.addEventListener(ev, off));
+    $('#done').onclick = closeOv;
+  });
+  b('#m_vote', () => { MP.discuss && MP.discuss.skip(); closeOv(); });
+  b('#m_add', () => { MP.discuss && MP.discuss.add(); closeOv(); });
+  b('#m_skip', () => { if (MP.hunt && !MP.hunt.done) MP.hunt.force(); MP.players.forEach(autoAnswer); closeOv(); });
+  b('#m_snd', () => { S.soundOn = !S.soundOn; saveS(); A.volume(); mpMenu(); });
+  b('#m_voice', () => { S.voiceOn = !S.voiceOn; saveS(); if (!S.voiceOn) try { speechSynthesis.cancel(); } catch (e) {} mpMenu(); });
+  b('#m_quit', () => { if (confirm('Spiel für alle beenden?')) { closeOv(); try { speechSynthesis.cancel(); } catch (e) {} G.winner = G.winner || 'none'; mpLeave(); } });
+  b('#m_leave', () => { if (confirm('Spiel verlassen? Du kannst mit deinem Namen wieder beitreten.')) { CL.send({t: 'bye'}); mpLeave(); } });
+}
+
+/* ---------- Sterne & Start ---------- */
+(function stars() { const s = $('#stars'); let h = ''; for (let i = 0; i < 90; i++) h += `<i class="star" style="left:${rnd(0, 100)}%;top:${rnd(0, 70)}%;animation-delay:${rnd(0, 4)}s;opacity:${rnd(.2, .9)};transform:scale(${rnd(.5, 1.4)})"></i>`; s.innerHTML = h; })();
+(function route() {
+  const m = location.hash.match(/r=([A-Z0-9]{5})(?:\.(\d))?/i);
+  if (m) mpJoinScreen(m[1].toUpperCase(), m[2] != null ? +m[2] : null); else home();
+})();
+if ('serviceWorker' in navigator && !TEST && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+document.addEventListener('pointerdown', () => { A.resume(); }, {passive: true});
+</script>
+</body>
+</html>

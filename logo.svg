@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#2a1f3d"/><stop offset=".55" stop-color="#140f22"/><stop offset="1" stop-color="#07060d"/></radialGradient>
+<radialGradient id="moon" cx="42%" cy="40%" r="60%"><stop offset="0" stop-color="#fff4cf"/><stop offset=".7" stop-color="#f1d68a"/><stop offset="1" stop-color="#c99a45"/></radialGradient>
+<radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset=".55" stop-color="#f1d68a" stop-opacity=".45"/><stop offset="1" stop-color="#f1d68a" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<circle cx="236" cy="200" r="200" fill="url(#glow)"/>
+<circle cx="236" cy="200" r="142" fill="url(#moon)"/>
+<g fill="#c99a45" opacity=".35"><circle cx="190" cy="160" r="22"/><circle cx="280" cy="250" r="30"/><circle cx="300" cy="140" r="12"/><circle cx="200" cy="270" r="10"/></g>
+<path fill="#06050a" d="M176 512 C192 452 204 404 200 346 C196 304 178 266 160 228 L130 156 C150 172 172 186 194 196 L186 178 C168 152 150 124 138 98 C146 86 160 84 172 90 C198 106 224 124 248 140 C258 136 268 128 276 118 L296 50 C306 76 318 98 330 112 L356 72 C362 104 366 130 368 158 C380 186 388 214 394 240 L418 256 L404 268 L438 288 L420 300 L456 330 L432 338 L470 372 L446 380 L484 414 L460 420 L512 462 L512 512 Z"/>
+<path fill="#e8b84a" d="M266 158 C274 152 284 150 292 152 C286 160 276 164 266 158 Z"/>
+<path fill="#06050a" d="M0 470 C80 440 140 452 200 470 C260 488 330 478 400 470 C450 466 490 470 512 476 L512 512 L0 512 Z"/>
+</svg>
