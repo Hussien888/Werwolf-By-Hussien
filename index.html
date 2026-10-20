@@ -295,6 +295,8 @@ body.scared:after{content:"";position:fixed;inset:0;z-index:40;pointer-events:no
 .vbanner{border-color:rgba(210,72,63,.55);background:rgba(70,12,20,.6);text-align:center}
 .vbanner h3{justify-content:center;font-family:Creepster,Cinzel,serif;font-weight:400;font-size:1.7rem;color:#ff6b78}
 .tagv{font-size:.6rem;padding:1px 6px;border-radius:10px;border:1px solid #d2483f;color:#ff8a9a;margin-left:4px;vertical-align:2px;font-family:Cinzel,serif}
+.chat{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);line-height:1.35}
+.chat:last-child{border-bottom:0}
 .signl{display:inline-block;margin-top:6px;padding:4px 12px;border:1px solid rgba(224,65,79,.5);border-radius:20px;background:rgba(120,20,30,.25);font-style:normal;color:#ffc2c8}
 </style>
 </head>
@@ -2060,7 +2062,7 @@ const S = Object.assign({
   players: [], wolves: 2, roles: ['seherin','hexe','amor','jaeger'],
   voiceOn: true, voiceURI: '', pitch: 0.8, rate: 0.86,
   soundOn: true, vol: 0.7, discuss: 3, voteMode: 'geheim', captain: true, reveal: true, callDead: true,
-  mpPlay: true, hostName: '', myName: '', showVotes: true, ghost: true,
+  mpPlay: true, cpuBots: 7, hostName: '', myName: '', showVotes: true, ghost: true,
   variant: 'klassisch', rolesVar: 'klassisch', vstash: {}
 }, store.get('settings', {}));
 const saveS = () => store.set('settings', S);
@@ -3162,6 +3164,9 @@ function home() {
     <div class="acts" style="flex-direction:column;margin-top:10px">
       <button class="btn primary" id="h_host">🌕 Spiel erstellen (ich bin Spielleiter)</button>
       <button class="btn" id="h_join">🔗 Spiel beitreten</button></div></div>
+  <div class="card"><h3>🤖 Gegen den Computer</h3>
+    <p class="small mute" style="margin-top:4px">Allein spielen: du gegen Computer-Mitspieler, die lügen, morden und mitdiskutieren. Kein Internet und keine anderen Handys nötig. Auch mit Blutnacht.</p>
+    <div class="acts"><button class="btn" id="h_cpu">🤖 Computer-Modus</button></div></div>
   <div class="card"><h3>🎲 Nur ein Handy</h3>
     <p class="small mute" style="margin-top:4px">Das Handy wird herumgereicht und liegt nachts in der Mitte. (Die Horror-Variante <b>Blutnacht</b> gibt es nur, wenn jeder sein eigenes Handy hat.)</p>
     <div class="acts"><button class="btn ghost" id="h_single">Ein-Handy-Modus</button></div></div>
@@ -3169,6 +3174,7 @@ function home() {
   $('#h_host').onclick = () => mpHostStart();
   $('#h_join').onclick = () => mpJoinScreen('');
   $('#h_single').onclick = () => setup();
+  $('#h_cpu').onclick = () => cpuStart();
   $('#rules').onclick = e => { e.preventDefault(); rulesOv(false); };
 }
 
@@ -3421,6 +3427,7 @@ function sendPub() {
 }
 /* Privater Bildschirm an einen Spieler */
 async function sendPriv(p) {
+  if (p.bot) { botThink(p); return; }
   const msg = {v: ++MP.seq, view: p.view || null, me: meInfo(p)};
   if (p.local) { CL.onPriv(JSON.parse(JSON.stringify(msg))); return; }
   if (!p.key) return;
@@ -3506,10 +3513,14 @@ function bindVariant() {
 function hostLobby() {
   switchVariant(S.variant);
   document.body.classList.remove('ingame'); MP.pub.ph = 'lobby'; MP.pub.var = S.variant; setSky('night');
-  const n = MP.players.length, link = joinLink();
+  const n = MP.players.length, off = MP.offline, link = off ? '' : joinLink(), bots = MP.players.filter(p => p.bot).length;
   render(`
-  <div class="row" style="justify-content:space-between"><button class="btn sm ghost" id="close">✕ Raum schließen</button><span class="kicker">Spielleiter <span class="cdot ${MP.netOk ? 'on' : ''}" id="netdot"></span></span></div>
-  <div class="card center"><div class="kicker">Raum-Code</div>
+  <div class="row" style="justify-content:space-between"><button class="btn sm ghost" id="close">${off ? '‹ Zurück' : '✕ Raum schließen'}</button><span class="kicker">${off ? '🤖 Computer-Modus' : `Spielleiter <span class="cdot ${MP.netOk ? 'on' : ''}" id="netdot"></span>`}</span></div>
+  ${off ? `<div class="card center"><div class="kicker">Gegen den Computer</div><div style="font-size:3.2rem;line-height:1.3">🤖</div>
+    <p class="small mute">Du spielst allein gegen Computer-Mitspieler. Sie bekommen echte Rollen, morden, lügen, stimmen ab und reden in der Diskussion mit. Dein Handy ist gleichzeitig Erzähler und deine Karte.</p>
+    <div class="row" style="justify-content:center;margin-top:8px"><span>Computer-Mitspieler</span><div class="counter"><button class="ib" id="bm">−</button><b>${bots}</b><button class="ib" id="bp">+</button></div></div></div>
+    <div class="card"><h3>🧙 Dein Name</h3><input type="text" id="hname" placeholder="Dein Name" maxlength="18" value="${esc(S.hostName || '')}"></div>`
+  : `<div class="card center"><div class="kicker">Raum-Code</div>
     <div class="roomcode">${MP.code.split('').map(c => `<span>${c}</span>`).join('')}</div>
     <div class="qr">${qrSVG(link)}</div>
     <p class="small mute">Scannt den QR-Code mit der Kamera oder öffnet die Werwolf-App und gebt den Code ein.</p>
@@ -3517,16 +3528,22 @@ function hostLobby() {
   <div class="card"><h3>🧙 Spielleiter</h3>
     <div class="tog" id="t_play"><div class="sw ${S.mpPlay ? 'on' : ''}"></div><span>Ich spiele selbst mit</span></div>
     ${S.mpPlay ? `<input type="text" id="hname" placeholder="Dein Name" maxlength="18" value="${esc(S.hostName || '')}" style="margin-top:10px">` : '<p class="small mute" style="margin-top:8px">Du bist nur Erzähler. Dein Handy zeigt das Geschehen und darf alle Rollen sehen.</p>'}
-    <p class="small mute" style="margin-top:8px">Dieses Handy ist der Erzähler: Lautstärke hoch und in die Mitte legen. ${S.mpPlay ? 'Deine eigenen Züge machst du trotzdem hier, das fällt nicht auf, weil alle gleichzeitig tippen.' : ''}</p></div>
+    <p class="small mute" style="margin-top:8px">Dieses Handy ist der Erzähler: Lautstärke hoch und in die Mitte legen. ${S.mpPlay ? 'Deine eigenen Züge machst du trotzdem hier, das fällt nicht auf, weil alle gleichzeitig tippen.' : ''}</p></div>`}
   ${variantCard()}
   <div class="card" id="lobbyList">${lobbyListHTML()}</div>
   ${rolesSection(Math.max(n, 4))}
   ${settingsSection(true)}
   <p class="foot"><a href="#" id="rules">📖 Regeln & alle Rollen</a></p>
   <div class="sticky"><div class="in"><button class="btn primary wide" id="mpstart" style="min-height:58px;font-size:1.1rem">🌕 Spiel starten</button><div class="center small mute" id="startwhy" style="margin-top:6px"></div></div></div>`);
-  $('#close').onclick = () => { if (confirm('Raum schließen? Alle Spieler werden getrennt.')) mpLeave(); };
-  $('#share').onclick = async () => { try { if (navigator.share) await navigator.share({title: 'Werwolf – Düsterwald', text: 'Komm in mein Werwolf-Spiel! Code: ' + MP.code, url: link}); else { await navigator.clipboard.writeText(link); $('#share').textContent = '✅ Link kopiert'; } } catch (e) {} };
-  $('#t_play').onclick = () => { S.mpPlay = !S.mpPlay; saveS(); if (S.mpPlay) addHostPlayer(); else removeHostPlayer(); sendPub(); hostLobbyRefresh(); };
+  if (off) {
+    $('#close').onclick = () => { MP.on = false; MP.host = false; MP.offline = false; MP.players = []; MP.me = null; G = null; home(); };
+    const setBots = k => { const y = window.scrollY; S.cpuBots = Math.max(3, Math.min(15, k)); saveS(); fillBots(); hostLobby(); window.scrollTo(0, y); };
+    $('#bm').onclick = () => setBots(bots - 1); $('#bp').onclick = () => setBots(bots + 1);
+  } else {
+    $('#close').onclick = () => { if (confirm('Raum schließen? Alle Spieler werden getrennt.')) mpLeave(); };
+    $('#share').onclick = async () => { try { if (navigator.share) await navigator.share({title: 'Werwolf – Düsterwald', text: 'Komm in mein Werwolf-Spiel! Code: ' + MP.code, url: link}); else { await navigator.clipboard.writeText(link); $('#share').textContent = '✅ Link kopiert'; } } catch (e) {} };
+    $('#t_play').onclick = () => { S.mpPlay = !S.mpPlay; saveS(); if (S.mpPlay) addHostPlayer(); else removeHostPlayer(); sendPub(); hostLobbyRefresh(); };
+  }
   if ($('#hname')) $('#hname').oninput = e => { S.hostName = e.target.value; saveS(); if (MP.me) { MP.me.name = (S.hostName || 'Spielleiter').trim().slice(0, 18) || 'Spielleiter'; } startState(); sendPub(); };
   if ($('#hname')) $('#hname').onblur = () => hostLobbyRefresh();
   bindLobbyList(); bindVariant();
@@ -3535,6 +3552,123 @@ function hostLobby() {
   $('#rules').onclick = e => { e.preventDefault(); rulesOv(false); };
   $('#mpstart').onclick = () => mpStartGame();
   startState(); sendPub();
+}
+
+/* =========================================================
+   COMPUTER-MODUS – allein gegen Computer-Mitspieler, ganz ohne Internet
+   ========================================================= */
+const BOT_NAMES = ['Lena', 'Mo', 'Sara', 'Ali', 'Ben', 'Mia', 'Tim', 'Nora', 'Jonas', 'Emma', 'Paul', 'Lea', 'Finn', 'Hanna', 'Luis', 'Zoe'];
+function fillBots() {
+  const want = S.cpuBots || 7, me = (S.hostName || '').trim().toLowerCase();
+  MP.players = MP.players.filter(p => !p.bot || MP.players.filter(q => q.bot).indexOf(p) < want);
+  const used = new Set(MP.players.map(p => p.name.toLowerCase()));
+  for (const nm of BOT_NAMES) { if (MP.players.filter(p => p.bot).length >= want) break; if (!used.has(nm.toLowerCase()) && nm.toLowerCase() !== me) { MP.players.push({id: 0, cid: 'bot' + nm, name: nm, bot: true, conn: true, mem: {}}); used.add(nm.toLowerCase()); } }
+}
+function cpuStart() {
+  A.init(); A.resume(); A.volume();
+  MP.on = true; MP.host = true; MP.offline = true; MP.code = ''; MP.netOk = true; MP.mq = null;
+  S.mpPlay = true; if (!(S.hostName || '').trim()) S.hostName = 'Du'; saveS();
+  MP.players = []; addHostPlayer(); fillBots();
+  MP.pub = {ph: 'lobby', code: '', var: S.variant};
+  hostLobby();
+}
+const botWait = (a, b) => TEST ? 5 : rnd(a, b);
+/* Ein Computer-Spieler sieht seinen „Bildschirm“ und antwortet nach kurzer Bedenkzeit */
+function botThink(p) {
+  const v = p.view; if (!v || !v.rid || !G) return;
+  if (v.live) { clearTimeout(p._lT); p._lT = setTimeout(() => botLive(p), botWait(800, 2600)); return; }
+  if (!p.pending || p.pending.rid !== v.rid || p._rid === v.rid) return;
+  p._rid = v.rid;
+  const d = v.v === 'discuss' ? botWait(9000, 16000) : v.v === 'text' ? botWait(3500, 7000) : v.v === 'role' ? botWait(1500, 4000) : botWait(1200, 4500);
+  setTimeout(() => { if (p.pending && p.pending.rid === v.rid) hostInput(p, {t: 'ans', rid: v.rid, val: botAnswer(p, v)}); }, d);
+}
+function botLive(p) {
+  const v = p.view, H = MP.hunt; if (!v || !v.live || !H || H.done) return;
+  const ids = v.cands.map(c => c.id);
+  const human = G.players.find(q => !q.bot && isWolf(q) && H.sel[q.id] != null);
+  let t = human ? H.sel[human.id] : null;
+  if (t == null) { const o = Object.entries(H.sel).filter(([k]) => +k !== p.id).map(e => e[1]); if (o.length) t = o[0]; }
+  if (t == null) {
+    if (H.trail) { const inno = ids.filter(id => !isWolf(byId(id))); t = Math.random() < .15 || !inno.length ? any(ids) : any(inno); }
+    else t = botPreyPick(p, ids);
+  }
+  if (H.sel[p.id] !== t && ids.includes(t)) hostInput(p, {t: 'sel', rid: v.rid, val: t});
+}
+/* Mörder/Werwölfe jagen bevorzugt die, denen das Dorf vertraut (gefährliche Rollen) */
+function botPreyPick(p, ids) {
+  const tr = G.trust || {}, best = ids.filter(id => (tr[id] || 0) > 0);
+  return best.length && Math.random() < .6 ? best.sort((a, b) => (tr[b] || 0) - (tr[a] || 0))[0] : any(ids);
+}
+/* Verdacht eines Computer-Spielers */
+function botSuspect(p, ids) {
+  ids = ids.filter(id => id !== p.id); if (!ids.length) return null;
+  const m = p.mem || (p.mem = {});
+  if (p.alive && isWolf(p)) {
+    const inno = ids.filter(id => !isWolf(byId(id))); if (!inno.length) return any(ids);
+    const sus = G.sus || {}; const top = inno.slice().sort((a, b) => (sus[b] || 0) - (sus[a] || 0))[0];
+    return Math.random() < .5 && (sus[top] || 0) > 0 ? top : any(inno);
+  }
+  const known = ids.filter(id => m[id] === 'w'); if (known.length) return any(known);
+  let pool = ids.filter(id => m[id] !== 'g'); if (!pool.length) pool = ids;
+  if (G.clue && Math.random() < .35 && pool.includes(G.clue.owner)) return G.clue.owner;
+  const sus = G.sus || {}, top = pool.slice().sort((a, b) => (sus[b] || 0) - (sus[a] || 0))[0];
+  return Math.random() < .4 && (sus[top] || 0) > 1 ? top : any(pool);
+}
+function botAnswer(p, v) {
+  const t = (v.kicker || '') + ' ' + (v.title || '') + ' ' + (v.html || '');
+  if (v.v === 'choice') {
+    if (/Heiltrank/.test(t)) return Math.random() < .6 ? v.options[0].value : v.options[v.options.length - 1].value;
+    return any(v.options).value;
+  }
+  if (v.v === 'text') return botWords(p);
+  if (v.v !== 'pick') return true;
+  const ids = v.cands.map(c => c.id), n = v.n || 1;
+  if (n > 1) return shuffle(ids).slice(0, n);
+  const others = ids.filter(id => id !== p.id);
+  if (!others.length) return v.skip ? null : ids[0];
+  if (/vergiften/.test(t)) return Math.random() < .25 ? botSuspect(p, others) : null;
+  if (/Rabe/.test(t)) return Math.random() < .6 ? botSuspect(p, others) : null;
+  if (/Schlächter/.test(t)) return Math.random() < .85 ? any(others) : null;
+  if (/Vertrau/.test(t)) { if (p.alive && isWolf(p)) { const mates = others.filter(id => isWolf(byId(id))); return mates.length && Math.random() < .5 ? any(mates) : any(others); } const g = others.filter(id => (p.mem || {})[id] === 'g'); return g.length ? any(g) : (Math.random() < .2 ? null : any(others)); }
+  if (/Seherin|Seele/.test(t)) { const un = others.filter(id => !(p.mem || {})[id]); const id = any(un.length ? un : others); (p.mem || (p.mem = {}))[id] = isWolf(byId(id)) ? 'w' : 'g'; return id; }
+  if (/Beschützer/.test(t)) return any(ids);
+  if (/Hauptmann/.test(t) && !/Gleichstand/.test(t)) { const g = others.filter(id => (p.mem || {})[id] === 'g'); return g.length ? any(g) : any(others); }
+  if (v.skip && Math.random() < .08) return null;
+  return botSuspect(p, others);
+}
+function botWords(p) {
+  const L = alive().filter(q => q !== p), m = p.mem || {};
+  if (!L.length) return 'Endlich Ruhe…';
+  const known = L.find(q => m[q.id] === 'w');
+  if (known && !isWolf(p)) return `${known.name} ist ${BL() ? 'ein Mörder' : 'ein Werwolf'}!`;
+  const s = byId(botSuspect(p, L.map(q => q.id)) ?? L[0].id).name;
+  return any(isWolf(p) ? [`${s} war es!`, `Traut ${s} nicht`, `${s} hat gelogen`, 'Ich war unschuldig…', `Rächt mich an ${s}`]
+    : [`Traut ${s} nicht`, 'Es war jemand am Tisch', `${s}… warum?`, 'Ich hab nichts gesehen', 'Rächt mich!', `Schaut euch ${s} an`]).slice(0, 40);
+}
+/* Computer-Spieler reden in der Diskussion mit */
+function botChatter(L, isOn) {
+  const bots = L.filter(p => p.bot && p.alive); if (!bots.length) return;
+  const lines = [], used = new Set();
+  const n = Math.min(bots.length, 3 + Math.floor(Math.random() * 2));
+  for (let k = 0; k < n; k++) {
+    const b = any(bots.filter(x => !used.has(x)) .length ? bots.filter(x => !used.has(x)) : bots); used.add(b);
+    const tgt = botSuspect(b, alive().map(q => q.id)); if (tgt == null) continue; const s = byId(tgt).name, m = b.mem || {};
+    const knownW = Object.keys(m).find(id => m[id] === 'w' && byId(+id).alive);
+    let t;
+    if (knownW && !isWolf(b) && Math.random() < .7) t = `Ich bin die Seherin. ${byId(+knownW).name} ist ${BL() ? 'ein Mörder' : 'ein Werwolf'}!`;
+    else if (BL() && G.clue && byId(G.clue.owner).alive && Math.random() < .5) { const sg = SIGNS[G.clue.sign]; t = G.clue.owner === b.id ? `${sg[1]}? Das ist meins… jemand will mir das anhängen!` : `Wem gehört die ${sg[1]}? Ich tippe auf ${s}.`; }
+    else t = any([`Ich trau ${s} nicht.`, `${s} war heute Nacht so ruhig…`, `Ich stimme für ${s}.`, `Habt ihr gesehen, wie ${s} geguckt hat?`, `${s} lügt doch!`, `Ich war's nicht, ehrlich. Eher ${s}.`]);
+    lines.push([b.name, t]);
+  }
+  let i = 0; MP.chat = [];
+  const next = () => {
+    if (!isOn() || i >= lines.length) return;
+    const [nm, t] = lines[i++]; MP.chat.push(`<div class="chat"><b>${esc(nm)}:</b> <span class="mute">${esc(t)}</span></div>`);
+    MP.pub.stage = Object.assign({}, MP.pub.stage, {html: `<div class="card small" style="margin-top:12px;text-align:left">${MP.chat.join('')}</div>`}); sendPub();
+    say(nm + ' sagt: ' + t);
+    setTimeout(next, botWait(4000, 7000));
+  };
+  setTimeout(next, botWait(2500, 4000));
 }
 function netDot() { const d = $('#netdot') || $('#mpnet'); if (d) d.classList.toggle('on', MP.netOk); }
 
@@ -3992,6 +4126,7 @@ function mpDiscuss() {
       if (ready.size >= need) done();
     }));
     say(S.discuss ? line('discuss', {min: S.discuss}) : line('discuss_free'));
+    MP.chat = []; if (MP.offline) botChatter(L, () => !fin);
     iv = setInterval(() => {
       if (!S.discuss || fin) return;
       left--;
@@ -4206,7 +4341,7 @@ function viewHTML(v, me) {
   if (v.v === 'wait') return `<div class="scr scene waitv"><div class="big">${v.icon || '🌙'}</div><h2>${v.title}</h2><p>${v.sub || ''}</p><div class="dots"><i></i><i></i><i></i></div></div>`;
   if (v.v === 'role') return `<div class="scr center"><div class="kicker">${esc(me.name)}</div><h2 style="color:var(--gold)">${v.title}</h2>${me.role ? roleCardMe(me) : ''}<div class="acts"><button class="btn primary" id="ok" disabled>${v.btn || 'Verstanden'}</button></div></div>`;
   if (v.v === 'discuss') { const s = CL.pub.stage || {}; const btn = v.ready ? '<div class="acts"><button class="btn" disabled>✅ Du bist bereit</button></div>' : `<div class="acts"><button class="btn blood" id="ok">✋ Bereit zur Abstimmung</button></div>`;
-    return `<div class="scr scene">${s.kicker ? `<div class="kicker">${s.kicker}</div>` : ''}<h2>${s.title || ''}</h2>${s.sub ? `<p>${s.sub}</p>` : ''}${timerHTML(btn)}</div>`; }
+    return `<div class="scr scene">${s.kicker ? `<div class="kicker">${s.kicker}</div>` : ''}<h2>${s.title || ''}</h2>${s.sub ? `<p>${s.sub}</p>` : ''}${timerHTML(btn)}${s.html || ''}</div>`; }
   return '';
 }
 function roleCardMe(me) {
