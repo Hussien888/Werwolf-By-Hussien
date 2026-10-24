@@ -335,6 +335,7 @@
         <div class="tg"><div>Fluch-Karten<small>Verrückte Zwänge für eine Runde</small></div><button class="sw" data-set="curse" aria-label="Fluch-Karten"></button></div>
         <div class="tg"><div>Schreckmomente<small>Jumpscares auf allen Handys gleichzeitig</small></div><button class="sw" data-set="scare" aria-label="Schreckmomente"></button></div>
         <div class="tg"><div>Verlierer-Strafe<small>Die letzte Gruppe bekommt eine Strafe</small></div><button class="sw" data-set="punish" aria-label="Verlierer-Strafe"></button></div>
+        <div class="tg"><div>Pantomime<small>Stumme Karte, Fluch Der Stumme und Stimmenraub</small></div><button class="sw" data-set="panto" aria-label="Pantomime"></button></div>
       </div>
     </div>
 
@@ -357,7 +358,7 @@
         <div><span class="ic">☠️</span><div><b>Todeskarte</b><span class="d">Nur EIN Wort zum Erklären. Richtig = 3 Punkte.</span></div></div>
         <div><span class="ic">🩸</span><div><b>Verfluchte Karte</b><span class="d">Richtig +2, aber Tabu kostet 3.</span></div></div>
         <div><span class="ic">👻</span><div><b>Seelenraub</b><span class="d">Richtig klaut der führenden Gruppe einen Punkt.</span></div></div>
-        <div><span class="ic">🤐</span><div><b>Stumme Karte</b><span class="d">Nur Pantomime. Richtig = 2 Punkte.</span></div></div>
+        <div><span class="ic">🤐</span><div><b>Stumme Karte</b><span class="d">Nur Pantomime. Richtig = 2 Punkte. Nur wenn Pantomime an ist.</span></div></div>
         <h4>Chaos-Ereignisse</h4>
         <div><span class="ic">🔦</span><div><b>Blackout</b><span class="d">Der Erklärer liest die Karte nur mit dem Finger als Taschenlampe.</span></div></div>
         <div><span class="ic">🪞</span><div><b>Spiegelwelt, Kopfüber, Nebel, Erdbeben</b><span class="d">Die Karte des Erklärers wird schwer lesbar.</span></div></div>
@@ -533,7 +534,7 @@ var SPECIALS={
   silent:{cls:"silent",icon:"🤐", label:"Stumme Karte",    hint:"Nur Pantomime! Richtig = 2", right:2, tabu:-1, say:"Stumme Karte."}
 };
 var CURSES=[
-  {t:"Der Stumme",d:"Diese Runde NUR mit Gesten beschreiben. Kein einziger Laut!"},
+  {t:"Der Stumme",d:"Diese Runde NUR mit Gesten beschreiben. Kein einziger Laut!",panto:true},
   {t:"Flüster-Fluch",d:"Der Erklärer darf diese Runde nur flüstern."},
   {t:"Reim-Zwang",d:"Jede Beschreibung muss sich reimen. Viel Erfolg."},
   {t:"Zeitdieb",d:"Der Geist stiehlt Zeit. Diese Runde nur 30 Sekunden!",time:30},
@@ -705,7 +706,7 @@ function tS(){ return PFX+ROOM+"/s"; }
 var tickInt=0, beatInt=0, pushT=0;
 function mkTeams(n){ var a=[]; for(var i=0;i<n;i++) a.push({name:TEAM_NAMES[i],score:0}); return a; }
 function newGame(){ return {code:ROOM,seq:0,phase:"lobby",players:[],tc:2,teams:mkTeams(2),
-  set:{rt:60,goal:20,chaos:true,special:true,curse:true,scare:true,punish:true},
+  set:{rt:60,goal:20,chaos:true,special:true,curse:true,scare:true,punish:true,panto:false},
   turn:0,rot:[0,0,0,0],explainer:null,card:null,cid:0,cardAt:0,special:null,curse:null,mult:1,pendingTime:60,timeLeft:60,barMax:60,roundPts:0,elapsed:0,
   fx:null,fxLeft:0,fxName:"",evt:null,evtI:0,scare:null,scI:0,log:[],logI:0,notes:[],ghost:false,hourSaid:false,firstHour:false,events:[],scareAt:-1,paused:false,
   win:null,pendingWin:false,roundTeam:0,deck:[],deckI:0}; }
@@ -745,7 +746,7 @@ function act(t,data){ var m=data||{}; m.t=t; m.id=ME.id; if(IS_HOST) hostAct(ME.
 function addLog(k,o){ o=o||{}; G.logI++; o.i=G.logI; o.k=k; G.log.push(o); if(G.log.length>12) G.log.shift(); }
 function nextCard(){ if(!G.deck||G.deckI>=G.deck.length){ G.deck=shuffle(CARDS.map(function(c,i){return i;})); G.deckI=0; } return CARDS[G.deck[G.deckI++]]; }
 function rollSpecial(){ if(!G.set.special) return null; var r=Math.random(), b=G.ghost?1.4:1;
-  if(r<0.09*b) return "gold"; if(r<0.15*b) return "death"; if(r<0.21*b) return "cursed"; if(r<0.26*b) return "thief"; if(r<0.31*b) return "silent"; return null; }
+  if(r<0.09*b) return "gold"; if(r<0.15*b) return "death"; if(r<0.21*b) return "cursed"; if(r<0.26*b) return "thief"; if(r<0.31*b&&G.set.panto) return "silent"; return null; }
 function deal(quiet){ var c=nextCard(); G.card={w:c[0],tabu:c[1]}; G.special=rollSpecial(); G.cid++; G.cardAt=Date.now();
   if(G.special&&!quiet){ addLog("special",{s:G.special}); var sp=SPECIALS[G.special]; if(sp.say) say(sp.say,0.95,0.6); } }
 function rightPts(){ return (G.special?SPECIALS[G.special].right:1)*G.mult*(G.fx==="rush"?2:1); }
@@ -765,7 +766,7 @@ function toHandoff(){
   if(G.set.goal>0&&leaderScore()>=G.set.goal-5) G.ghost=true;
   G.firstHour=false; if(G.ghost&&!G.hourSaid){ G.hourSaid=true; G.firstHour=true; }
   G.curse=null; G.mult=1; var rt=G.set.rt;
-  if(G.set.curse&&(G.ghost||Math.random()<0.4)){ G.curse=pick(CURSES); if(G.curse.mult)G.mult=G.curse.mult; if(G.curse.time) rt=Math.min(G.curse.time,G.set.rt); }
+  if(G.set.curse&&(G.ghost||Math.random()<0.4)){ G.curse=pick(CURSES.filter(function(c){return G.set.panto||!c.panto;})); if(G.curse.mult)G.mult=G.curse.mult; if(G.curse.time) rt=Math.min(G.curse.time,G.set.rt); }
   G.pendingTime=rt; G.notes=[];
   var a=""; if(G.firstHour) a="Es schlägt Mitternacht. Die Geisterstunde beginnt. ";
   a+=pick(ANSAGEN).replace("{t}",G.teams[G.turn].name)+" "+nameOf(G.explainer)+" erklärt.";
@@ -778,7 +779,7 @@ function hostOtherExp(){ G.rot[G.turn]++; pickExplainer(); say(nameOf(G.explaine
 function planRound(rt){
   G.events=[]; G.scareAt=-1;
   if(G.set.chaos){ var n=(G.ghost?2:1)+(Math.random()<0.5?1:0); if(rt<=30) n=Math.min(n,1);
-    var pool=shuffle(EVENTS), lo=6, hi=rt-6, span=(hi-lo)/n;
+    var pool=shuffle(EVENTS.filter(function(e){return G.set.panto||e.id!=="mute";})), lo=6, hi=rt-6, span=(hi-lo)/n;
     for(var i=0;i<n;i++) G.events.push({at:Math.round(lo+span*i+Math.random()*Math.max(1,span-12)),ev:pool[i]}); }
   if(G.set.scare&&Math.random()<0.55){ for(var tr=0;tr<10;tr++){ var s=3+rnd(Math.max(1,rt-6));
       if(!G.events.some(function(e){return Math.abs(e.at-s)<5;})){ G.scareAt=s; break; } } }
